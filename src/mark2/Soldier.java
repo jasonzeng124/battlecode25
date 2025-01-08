@@ -95,7 +95,7 @@ public class Soldier {
                 MapLocation shouldBeMarked = tile.getMapLocation().subtract(dir);
                 if (rc.senseMapInfo(shouldBeMarked).getMark() == PaintType.EMPTY && rc.canMarkTowerPattern(type, targetLoc)) {
                     rc.markTowerPattern(type, targetLoc);
-                    System.out.println("Trying to build a tower at " + targetLoc);
+                    // System.out.println("Trying to build a tower at " + targetLoc);
                 }
 
                 // Fill in any spots in the pattern with the appropriate paint.
@@ -112,7 +112,7 @@ public class Soldier {
                 if (rc.canCompleteTowerPattern(type, targetLoc)) {
                     rc.completeTowerPattern(type, targetLoc);
                     rc.setTimelineMarker("Tower built", 0, 255, 0);
-                    System.out.println("Built a tower at " + targetLoc + "!");
+                    // System.out.println("Built a tower at " + targetLoc + "!");
                 }
 
                 // Upgrade the tower if we can.

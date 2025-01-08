@@ -2,9 +2,6 @@ package mark2;
 
 import battlecode.common.*;
 
-import java.util.ArrayList;
-import java.util.Random;
-
 public class Mopper {
     static final double INF = 100000.0;
 
@@ -107,6 +104,7 @@ public class Mopper {
             }
         }
         if (!moved) {
+            if(bestDir == -1) bestDir = QRand.randInt(8);
             rc.move(DIRS[bestDir]);
             moved = true;
         }
