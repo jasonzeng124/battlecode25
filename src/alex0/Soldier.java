@@ -1,13 +1,6 @@
-package examplefuncsplayer;
+package alex0;
 
 import battlecode.common.*;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 
 
 public class Soldier {
@@ -29,15 +22,10 @@ public class Soldier {
     };
 
     public static final int [] popcount = {0, 1, 1, 2, 1, 2, 2, 3};
-    public static final boolean [][] resourceTest = 
-        {{true, false, true, false},
-         {false, true, false, true},
-         {true, false, false, false},
-         {false, true, false, true},           
-        };
 
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
+    public static boolean [][] resourcePattern;
     public static int [] friendCnt;
     public static int [] notPainted;
     public static double [] randCosts;
@@ -48,6 +36,7 @@ public class Soldier {
     public static Direction way;
 
     public static void init(RobotController rc) throws GameActionException {
+        resourcePattern = rc.getResourcePattern();
         HomeNav.init();
         friendCnt = new int [9];
         notPainted = new int [9];
@@ -61,7 +50,7 @@ public class Soldier {
     public static boolean isPaintable(RobotController rc, MapLocation loc) throws GameActionException{
         if(rc.canSenseLocation(loc)){
             MapInfo mi = rc.senseMapInfo(loc);
-            if(mi.getPaint() == PaintType.EMPTY && rc.canAttack(loc)){
+            if(rc.canAttack(loc) && mi.getPaint() == PaintType.EMPTY){
                 if(rc.canSenseRobotAtLocation(loc)){
                     RobotInfo ri = rc.senseRobotAtLocation(loc);
                     if(ri.team.isPlayer()){
@@ -75,7 +64,10 @@ public class Soldier {
                         return true;
                     }
                 }else{
-                    return mi.isPassable();
+                    if(mi.hasRuin() || mi.isWall()){
+                        return false;
+                    }
+                    return true;
                 }
             }else{
                 return false;
@@ -101,11 +93,13 @@ public class Soldier {
         
         for (MapInfo tile : nearbyTiles){
             if(isPaintable(rc, tile.getMapLocation())){
-             //   rc.setIndicatorDot(tile.getMapLocation(), 255, 0, 255);
+                rc.setIndicatorDot(tile.getMapLocation(), 255, 0, 255);
                 MapLocation dif = FastMath.addVec(FastMath.minusVec(tile.getMapLocation(), rc.getLocation()), new MapLocation(4, 4));
                 notPainted[dif.x] ^= (1 << dif.y);
             }
         }
+  //      rc.setIndicatorString(notPainted[0] + " " + notPainted[1] + " " + notPainted[2] + " " + notPainted[3] + " " + notPainted[4] + " " + notPainted[5] + " " + notPainted[6] + " " + notPainted[7] + " " + notPainted[8]);
+
         refuelStation = null;
         for (RobotInfo robot : nearbyRobots){
             if(robot.team.isPlayer()){
@@ -121,13 +115,11 @@ public class Soldier {
     }
 
     public static int countFriends(int x, int y){
-        y--;
-        return  popcount[(friendCnt[x-1] >> (y)) & 7] + popcount[(friendCnt[x] >> (y)) & 7] + popcount[(friendCnt[x+1] >> (y)) & 7];
+        return  popcount[(friendCnt[x-1] >> (y-1)) & 7] + popcount[(friendCnt[x] >> (y-1)) & 7] + popcount[(friendCnt[x+1] >> (y-1)) & 7];
     }
 
     public static int countNotPainted(int x, int y){
-        y--;
-        return  popcount[(notPainted[x-1] >> (y)) & 7] + popcount[(notPainted[x] >> (y)) & 7] + popcount[(notPainted[x+1] >> (y)) & 7];
+        return  popcount[(notPainted[x-1] >> (y-1)) & 7] + popcount[(notPainted[x] >> (y-1)) & 7] + popcount[(notPainted[x+1] >> (y-1)) & 7];
     }
 
     public static void applyPaintCosts(RobotController rc) throws GameActionException {
@@ -169,35 +161,35 @@ public class Soldier {
 
     public static void applyExploreCosts(RobotController rc) throws GameActionException {
         if((((notPainted[2] >> 2) & 31) == 0) && (((notPainted[3] >> 2) & 31) == 0) && (((notPainted[4] >> 2) & 31) == 0) && (((notPainted[5] >> 2) & 31) == 0) && (((notPainted[6] >> 2) & 31) == 0)){
-          //  String s = "";
+            String s = "";
             for(int i = 9; --i >= 0;){
                 int x = 4+3*directions[i].dx;
                 int y = 4+3*directions[i].dy;
                 int c = countNotPainted(x, y);
-             //   s += c;
-              //  s += " ";
+                s += c;
+                s += " ";
                 if(c == 0){
                     moveCosts[i] += 1000.0;
                 }else{
                     moveCosts[i] += (5.0 * (3 - c) * (3 - c));
                 }
             }
-         //   rc.setIndicatorString("F " + s);
+            rc.setIndicatorString("F " + s);
         }else{
-          //  String s = "";
+            String s = "";
             for(int i = 9; --i >= 0;){
                 int x = 4+directions[i].dx;
                 int y = 4+directions[i].dy;
                 int c = countNotPainted(x, y);
-           //     s += c;
-            //    s += " ";
+                s += c;
+                s += " ";
                 if(c == 0){
                     moveCosts[i] += 1000.0;
                 }else{
                     moveCosts[i] += (5.0 * (3 - c) * (3 -c));
                 }
             }
-          //  rc.setIndicatorString("E " + s);
+            rc.setIndicatorString("E " + s);
         }
     }
 
@@ -245,7 +237,8 @@ public class Soldier {
 
     public static boolean tryToPaint(RobotController rc, MapLocation loc) throws GameActionException{
         if(isPaintable(rc, loc)){
-            rc.attack(loc, resourceTest[loc.x&3][loc.y&3]);
+            rc.attack(loc);
+            //rc.setIndicatorString(loc.x + " " + loc.y);
             return true;
         }
         return false;
@@ -258,13 +251,11 @@ public class Soldier {
             MapLocation curLoc = rc.getLocation();
             HomeNav.recordMove(curLoc, prevLoc);
         }
-        if(rc.getPaint() >= 60){
-            if(!tryToPaint(rc, rc.getLocation())){
-                int offset = FastMath.rand256()%nearbyTiles.length;
-                for(int i = nearbyTiles.length; --i >= 0;){
-                    if(tryToPaint(rc, nearbyTiles[i].getMapLocation())){
-                        break;
-                    }
+        if(!tryToPaint(rc, rc.getLocation())){
+            int offset = FastMath.rand256()&7;
+            for(int i = 7; --i >= 0;){
+                if(tryToPaint(rc, rc.getLocation().add(directions[i^offset]))){
+                    break;
                 }
             }
         }
@@ -275,13 +266,9 @@ public class Soldier {
                 rc.transferPaint(refuelStation.location, rc.getPaint() - 200);
             }
         }
+        
         //declare resource boosts
-        for(int i = 9; --i >= 0;){
-            MapLocation loc = rc.getLocation().add(directions[i]);
-            if(rc.canCompleteResourcePattern(loc)){
-                rc.completeResourcePattern(loc);
-            }
-        }
+
     }
 
     @SuppressWarnings("unused")

@@ -2,13 +2,6 @@ package botv1;
 
 import battlecode.common.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.

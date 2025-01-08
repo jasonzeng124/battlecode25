@@ -194,11 +194,12 @@ configurations {
 }
 
 def os = System.getProperty("os.name").toLowerCase()
-def clientName = os.startsWith('windows')
-                    ? 'battlecode25-client-win-'
-                    : os.startsWith('mac')
-                        ? 'battlecode25-client-mac-'
-                        : 'battlecode25-client-linux-'
+// def clientName = os.startsWith('windows')
+//                     ? 'battlecode25-client-win-'
+//                     : os.startsWith('mac')
+//                         ? 'battlecode25-client-mac-'
+//                         : 'battlecode25-client-linux-'
+def clientName = 'battlecode25-client-win-'
 def clientType = project.findProperty("compatibilityClient").toBoolean()
                     ? "electron"
                     : "tauri"

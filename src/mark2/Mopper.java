@@ -1,7 +1,6 @@
 package mark2;
 
 import battlecode.common.*;
-import battlecode.schema.RobotType;
 
 import java.util.ArrayList;
 import java.util.Random;

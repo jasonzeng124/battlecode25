@@ -2,6 +2,7 @@
 
 ###### BATTLECODE ######
 
+.gradle
+.build
 **/matches
 **/client
-
