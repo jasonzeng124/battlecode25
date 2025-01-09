@@ -48,6 +48,11 @@ public class Soldier {
     public static void makeAction(RobotController rc) throws GameActionException {
         final int curRound = rc.getRoundNum();
 
+        double[] moveScore = new double[9];
+        for (int i = 0; i < 9; i++) {
+            moveScore[i] = 0;
+        }
+
         for (MapInfo tile : nearbyTiles) {
             if (tile.hasRuin()) {
                 final MapLocation targetLoc = tile.getMapLocation();
@@ -88,9 +93,10 @@ public class Soldier {
                         idx++;
                     }
                     idx %= 8;
-                    if (rc.canMove(DIRS[idx])) {
-                        rc.move(DIRS[idx]);
-                    }
+//                    if (rc.canMove(DIRS[idx])) {
+//                        rc.move(DIRS[idx]);
+//                    }
+                    moveScore[idx] += 15;
                 } else {
                     // Finished ruin, make improvements while passing by
                     if (rc.canUpgradeTower(targetLoc)) {
@@ -145,11 +151,6 @@ public class Soldier {
         }
 
         if (rc.isMovementReady()) {
-            double[] moveScore = new double[9];
-            for (int i = 0; i < 9; i++) {
-                moveScore[i] = 0;
-            }
-
             // Inertia
             moveScore[prevDir] += 5;
 
@@ -194,20 +195,6 @@ public class Soldier {
             if (bestDir != -1) {
                 rc.move(DIRS[bestDir]);
                 prevDir = bestDir;
-            }
-        }
-
-        // Deathrattle
-        if (rc.getHealth() < 50) {
-            for (RobotInfo robot : rc.senseNearbyRobots()) {
-                final MapLocation loc = robot.getLocation();
-                final int amount = Math.min(rc.getPaint(), robot.getType().paintCapacity - robot.getPaintAmount());
-                if (rc.canTransferPaint(loc, amount)) {
-                    rc.transferPaint(loc, amount);
-                }
-            }
-            if (rc.getPaint() == 0) {
-                rc.disintegrate();
             }
         }
 
