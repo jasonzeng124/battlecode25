@@ -17,18 +17,19 @@ public class Tower {
     static int turnsActive = 0;
 
     public static void makeAction(RobotController rc) throws GameActionException {
-        if (rc.isActionReady()) {
+        if (rc.isActionReady() && rc.getPaint() >= 300) {
+            UnitType type = UnitType.SOLDIER;
+            if (turnsActive >= 100 && rc.getRoundNum() >= 400) {
+                if (QRand.randDouble() < 0.5) {
+                    type = UnitType.MOPPER;
+                }
+            }
+
             final int offset = QRand.randInt(8);
             for (int i = 0; i < 8; i++) {
-                MapLocation nextLoc = rc.getLocation().add(directions[i ^ offset]);
-                UnitType type = UnitType.SOLDIER;
-                if (turnsActive >= 100 && rc.getRoundNum() >= 400) {
-                    if (QRand.randDouble() < 0.1) {
-                        type = UnitType.MOPPER;
-                    }
-                }
-                if (rc.canBuildRobot(type, nextLoc)) {
-                    rc.buildRobot(type, nextLoc);
+                final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);
+                if (rc.canBuildRobot(type, loc)) {
+                    rc.buildRobot(type, loc);
                 }
             }
         }

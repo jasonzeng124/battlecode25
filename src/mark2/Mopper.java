@@ -93,11 +93,6 @@ public class Mopper {
                 final int dir = myLoc.directionTo(loc).ordinal();
                 final double dist = myLoc.distanceSquaredTo(loc);
 
-                // Try not to walk on bare ground, not a hard rule, and only when going home
-                if (rc.getPaint() < HOME_THRES) {
-                    moveScore[dir] += GameUtils.hasEnemyTile(rc, loc) ? -3 : 0;
-                }
-
                 // Get close to enemy paint, but not onto it
                 if (GameUtils.isEnemyTile(tile)) {
                     moveScore[dir] += dist <= 2 ? -100 : +1;
