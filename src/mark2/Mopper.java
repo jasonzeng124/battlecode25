@@ -51,6 +51,8 @@ public class Mopper {
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
+        final int curRound = rc.getRoundNum();
+
         if (rc.isActionReady()) {
             // Withdraw paint
             for (RobotInfo robot : nearbyRobots) {
@@ -95,9 +97,9 @@ public class Mopper {
                 final int dir = myLoc.directionTo(loc).ordinal();
                 final double dist = myLoc.distanceSquaredTo(loc);
 
-                // Try not to walk on bare ground while going home so we don't die
+                // Try not to walk on bare ground, not a hard rule, and only when going home
                 if (rc.getPaint() < HOME_THRES) {
-                    moveScore[dir] += GameUtils.hasEnemyTile(rc, loc) ? -10 : 0;
+                    moveScore[dir] += GameUtils.hasEnemyTile(rc, loc) ? -3 : 0;
                 }
 
                 // Get close to enemy paint, but not onto it
@@ -111,11 +113,6 @@ public class Mopper {
                         switch (r.getType()) {
                             case UnitType.SOLDIER -> moveScore[dir] += 0.5;
                             case UnitType.MOPPER -> moveScore[dir] -= 1;
-                        }
-                    } else {
-                        switch (r.getType()) {
-                            // Moppers don't want to be in direct danger
-                            case UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_ONE_PAINT_TOWER -> moveScore[dir] -= 5;
                         }
                     }
                 }
@@ -132,6 +129,8 @@ public class Mopper {
                 rc.move(DIRS[bestDir]);
             }
         }
+
+        assert rc.getRoundNum() == curRound : "Mopper: Bytecode limit exceeded";
     }
 
     @SuppressWarnings("unused")

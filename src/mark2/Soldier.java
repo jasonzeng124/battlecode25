@@ -55,6 +55,8 @@ public class Soldier {
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
+        final int curRound = rc.getRoundNum();
+
         // If there's a ruin to work on, and we have resources, prioritize that
         if (rc.getPaint() >= BUILD_THRES) {
             for (MapInfo tile : nearbyTiles) {
@@ -149,10 +151,8 @@ public class Soldier {
                 final int dir = myLoc.directionTo(loc).ordinal();
                 final double dist = myLoc.distanceSquaredTo(loc);
 
-                // Try not to walk on bare ground while going home so we don't die
-                if (rc.getPaint() < HOME_THRES) {
-                    moveScore[dir] += GameUtils.hasEnemyTile(rc, loc) ? -10 : 0;
-                }
+                // Try not to walk on bare ground, not a hard rule
+                moveScore[dir] += GameUtils.hasEnemyTile(rc, loc) ? -3 : 0;
 
                 // Get close to enemy paint, but not onto it
                 if (GameUtils.isEnemyTile(tile)) {
@@ -165,11 +165,6 @@ public class Soldier {
                         switch (r.getType()) {
                             case UnitType.SOLDIER -> moveScore[dir] -= 1;
                             case UnitType.MOPPER -> moveScore[dir] += 0.5;
-                        }
-                    } else {
-                        switch (r.getType()) {
-                            // We don't want to be in direct danger
-                            case UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_ONE_PAINT_TOWER -> moveScore[dir] -= 5;
                         }
                     }
                 }
@@ -187,6 +182,8 @@ public class Soldier {
                 prevDir = bestDir;
             }
         }
+
+        assert rc.getRoundNum() == curRound : "Soldier: Bytecode limit exceeded";
     }
 
     @SuppressWarnings("unused")
