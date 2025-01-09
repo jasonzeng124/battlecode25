@@ -18,9 +18,6 @@ public class Soldier {
             Direction.CENTER
     };
 
-    public static int HOME_THRES = 50;
-    public static int BUILD_THRES = 75;
-
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
 
@@ -91,9 +88,14 @@ public class Soldier {
                         System.out.println("Built a tower at " + targetLoc + "!");
                     }
 
-                    // Move closer...
-                    if (rc.canMove(dir)) {
-                        rc.move(dir);
+                    // Move closer. Turn clockwise around the ruin to view the whole area
+                    int idx = dir.ordinal();
+                    while (idx < 16 && !rc.canMove(DIRS[idx % 8])) {
+                        idx++;
+                    }
+                    idx %= 8;
+                    if (rc.canMove(DIRS[idx])) {
+                        rc.move(DIRS[idx]);
                     }
                 } else {
                     // Finished ruin, make improvements while passing by
@@ -158,7 +160,7 @@ public class Soldier {
             moveScore[prevDir] += 5;
 
             // Try to move towards a paint tower if we're low
-            if (closestPT != null && rc.getPaint() < HOME_THRES) {
+            if (closestPT != null && rc.getPaint() < 50) {
                 moveScore[myLoc.directionTo(closestPT).ordinal()] += 50;
             }
 
@@ -181,7 +183,7 @@ public class Soldier {
                     final RobotInfo r = rc.senseRobotAtLocation(loc);
                     if (r.getTeam() == rc.getTeam()) {
                         switch (r.getType()) {
-                            case UnitType.SOLDIER -> moveScore[dir] -= 0.5;
+                            case UnitType.SOLDIER -> moveScore[dir] += curRound < 200 ? -10 : -0.5;
                             case UnitType.MOPPER -> moveScore[dir] += 1.5;
                         }
                     }

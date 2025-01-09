@@ -19,7 +19,7 @@ public class Tower {
     public static void makeAction(RobotController rc) throws GameActionException {
         if (rc.isActionReady() && rc.getPaint() >= 300) {
             UnitType type = UnitType.SOLDIER;
-            if (turnsActive >= 100 && rc.getRoundNum() >= 400) {
+            if (turnsActive >= 100 && rc.getRoundNum() >= 250) {
                 if (QRand.randDouble() < 0.5) {
                     type = UnitType.MOPPER;
                 }
