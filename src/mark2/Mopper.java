@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class Mopper {
-    static final double INF = 100000.0;
-
     public static final Direction[] DIRS = {
             Direction.NORTH,
             Direction.NORTHEAST,
@@ -21,7 +19,7 @@ public class Mopper {
             Direction.CENTER
     };
 
-    public static boolean initialized = false;
+    static final int HOME_THRES = 20;
 
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
@@ -49,11 +47,7 @@ public class Mopper {
     }
 
     public static boolean isMoppable(RobotController rc, MapLocation loc) throws GameActionException {
-        if (rc.getLocation().isWithinDistanceSquared(loc, 2) && rc.canAttack(loc)) {
-            MapInfo mi = rc.senseMapInfo(loc);
-            return !mi.getPaint().isAlly();
-        }
-        return false;
+        return rc.getLocation().isWithinDistanceSquared(loc, 2) && rc.canAttack(loc) && GameUtils.hasEnemyTile(rc, loc);
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
@@ -61,7 +55,7 @@ public class Mopper {
             // Withdraw paint
             for (RobotInfo robot : nearbyRobots) {
                 MapLocation loc = robot.getLocation();
-                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && allyPaintTower(rc, loc)) {
+                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && allyPaintTower(rc, loc) && robot.getPaintAmount() >= 200) {
                     int delta = -1 * java.lang.Math.min(robot.paintAmount, 200 - rc.getPaint());
                     if (delta < 0) {
                         rc.transferPaint(loc, delta);
@@ -92,8 +86,8 @@ public class Mopper {
             }
 
             // Try to move towards a paint tower if we're low
-            if (closestPT != null && rc.getPaint() < 50) {
-                moveScore[myLoc.directionTo(closestPT).ordinal()] += 5;
+            if (closestPT != null && rc.getPaint() < HOME_THRES) {
+                moveScore[myLoc.directionTo(closestPT).ordinal()] += 10;
             }
 
             for (MapInfo tile : nearbyTiles) {
@@ -101,14 +95,24 @@ public class Mopper {
                 final int dir = myLoc.directionTo(loc).ordinal();
                 final double dist = myLoc.distanceSquaredTo(loc);
 
+                // Try not to walk on bare ground while going home so we don't die
+                if (rc.getPaint() < HOME_THRES) {
+                    moveScore[dir] += GameUtils.hasEnemyTile(rc, loc) ? -10 : 0;
+                }
+
                 // Get close to enemy paint, but not onto it
-                if (!tile.getPaint().isAlly()) {
-                    moveScore[dir] += dist <= 2 ? -5 : +1;
+                if (GameUtils.isEnemyTile(tile)) {
+                    moveScore[dir] += dist <= 2 ? -100 : +1;
                 }
 
                 if (rc.canSenseRobotAtLocation(loc)) {
                     final RobotInfo r = rc.senseRobotAtLocation(loc);
-                    if (r.getTeam() != rc.getTeam()) {
+                    if (r.getTeam() == rc.getTeam()) {
+                        switch (r.getType()) {
+                            case UnitType.SOLDIER -> moveScore[dir] += 0.5;
+                            case UnitType.MOPPER -> moveScore[dir] -= 1;
+                        }
+                    } else {
                         switch (r.getType()) {
                             // Moppers don't want to be in direct danger
                             case UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_ONE_PAINT_TOWER -> moveScore[dir] -= 5;
