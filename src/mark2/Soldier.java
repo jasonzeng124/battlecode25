@@ -143,7 +143,7 @@ public class Soldier {
 
             // Try to move towards a paint tower if we're low
             if (closestPT != null && rc.getPaint() < HOME_THRES) {
-                moveScore[myLoc.directionTo(closestPT).ordinal()] += 10;
+                moveScore[myLoc.directionTo(closestPT).ordinal()] += 50;
             }
 
             for (MapInfo tile : nearbyTiles) {
@@ -156,15 +156,20 @@ public class Soldier {
 
                 // Get close to enemy paint, but not onto it
                 if (GameUtils.isEnemyTile(tile)) {
-                    moveScore[dir] += dist <= 2 ? -100 : +1;
+                    moveScore[dir] += dist <= 2 ? -20 : +1;
+                }
+
+                // Prioritize empty tiles!
+                if (tile.getPaint() == PaintType.EMPTY) {
+                    moveScore[dir] += dist <= 2 ? -10 : +2;
                 }
 
                 if (rc.canSenseRobotAtLocation(loc)) {
                     final RobotInfo r = rc.senseRobotAtLocation(loc);
                     if (r.getTeam() == rc.getTeam()) {
                         switch (r.getType()) {
-                            case UnitType.SOLDIER -> moveScore[dir] -= 1;
-                            case UnitType.MOPPER -> moveScore[dir] += 0.5;
+                            case UnitType.SOLDIER -> moveScore[dir] -= 0.5;
+                            case UnitType.MOPPER -> moveScore[dir] += 1.5;
                         }
                     }
                 }

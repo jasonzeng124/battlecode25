@@ -2,7 +2,7 @@ package mark2;
 
 import battlecode.common.*;
 
-public class Mopper {
+public class Splasher {
     public static final Direction[] DIRS = {
             Direction.NORTH,
             Direction.NORTHEAST,
