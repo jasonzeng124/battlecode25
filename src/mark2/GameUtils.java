@@ -31,6 +31,6 @@ public class GameUtils {
             return false;
         }
         final RobotInfo r = rc.senseRobotAtLocation(loc);
-        return r.getTeam() == rc.getTeam() && (r.getType() == UnitType.LEVEL_ONE_PAINT_TOWER || r.getType() == UnitType.LEVEL_TWO_PAINT_TOWER || r.getType() == UnitType.LEVEL_THREE_PAINT_TOWER);
+        return r.team == rc.getTeam() && r.type.paintPerTurn > 0;
     }
 }

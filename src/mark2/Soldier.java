@@ -19,20 +19,14 @@ public class Soldier {
     };
 
     public static MapInfo[] nearbyTiles;
-    public static RobotInfo[] nearbyRobots;
 
     public static MapLocation myLoc, closestPT;
 
     public static int prevDir;
 
-    public static boolean shouldWorkHere(RobotController rc, MapInfo tile) throws GameActionException {
-        return (tile.hasRuin() && !rc.canSenseRobotAtLocation(tile.getMapLocation())) || rc.canUpgradeTower(tile.getMapLocation());
-    }
-
     public static void updateNearby(RobotController rc) throws GameActionException {
         myLoc = rc.getLocation();
         nearbyTiles = rc.senseNearbyMapInfos();
-        nearbyRobots = rc.senseNearbyRobots();
 
         for (MapInfo tile : nearbyTiles) {
             // Maintain the closest paint tower for refills
@@ -126,7 +120,7 @@ public class Soldier {
 
         // Withdraw paint
         if (rc.isActionReady() && rc.getPaint() < 150) {
-            for (RobotInfo robot : nearbyRobots) {
+            for (RobotInfo robot : rc.senseNearbyRobots()) {
                 MapLocation loc = robot.getLocation();
                 if (rc.getLocation().isWithinDistanceSquared(loc, 2) && GameUtils.hasAllyPaintTower(rc, loc) && robot.getPaintAmount() >= 50) {
                     int delta = -1 * java.lang.Math.min(robot.paintAmount, 200 - rc.getPaint());
@@ -176,15 +170,15 @@ public class Soldier {
 
                 // Prioritize empty tiles!
                 if (tile.getPaint() == PaintType.EMPTY) {
-                    moveScore[dir] += dist <= 2 ? -5 : +2;
+                    moveScore[dir] += dist <= 2 ? -5 : +1.5;
                 }
 
                 if (rc.canSenseRobotAtLocation(loc)) {
                     final RobotInfo r = rc.senseRobotAtLocation(loc);
                     if (r.getTeam() == rc.getTeam()) {
                         switch (r.getType()) {
-                            case UnitType.SOLDIER -> moveScore[dir] += curRound < 200 ? -10 : -0.5;
-                            case UnitType.MOPPER -> moveScore[dir] += 1.5;
+                            case UnitType.SOLDIER -> moveScore[dir] += curRound < 400 ? -10 : -0.5;
+                            case UnitType.MOPPER -> moveScore[dir] += 2.0;
                         }
                     }
                 }
@@ -200,6 +194,20 @@ public class Soldier {
             if (bestDir != -1) {
                 rc.move(DIRS[bestDir]);
                 prevDir = bestDir;
+            }
+        }
+
+        // Deathrattle
+        if (rc.getHealth() < 50) {
+            for (RobotInfo robot : rc.senseNearbyRobots()) {
+                final MapLocation loc = robot.getLocation();
+                final int amount = Math.min(rc.getPaint(), robot.getType().paintCapacity - robot.getPaintAmount());
+                if (rc.canTransferPaint(loc, amount)) {
+                    rc.transferPaint(loc, amount);
+                }
+            }
+            if (rc.getPaint() == 0) {
+                rc.disintegrate();
             }
         }
 

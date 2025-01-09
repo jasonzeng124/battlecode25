@@ -385,14 +385,14 @@ public class Soldier {
             init(rc);
         }
         act();
-        int peak = 0;
-        while(Clock.getBytecodeNum() <= 14000){
-            int start = Clock.getBytecodeNum();
-            HomeNav.wasteBytecode();
-            int end = Clock.getBytecodeNum();
-            peak = Math.max(peak, end-start);
-          //  System.out.println(end - start);
-        }
-       // rc.setIndicatorString(peak + "");
+//        int peak = 0;
+//        while(Clock.getBytecodeNum() <= 14000){
+//            int start = Clock.getBytecodeNum();
+//            HomeNav.wasteBytecode();
+//            int end = Clock.getBytecodeNum();
+//            peak = Math.max(peak, end-start);
+//          //  System.out.println(end - start);
+//        }
+//       // rc.setIndicatorString(peak + "");
     }
 }
