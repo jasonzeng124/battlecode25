@@ -1,6 +1,10 @@
 package mark2;
 
 import battlecode.common.*;
+import battlecode.schema.RobotType;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 public class Mopper {
     static final double INF = 100000.0;
@@ -21,12 +25,7 @@ public class Mopper {
 
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
-
-
-
     public static MapLocation myLoc, spawnLoc, closestPT;
-
-    public static Direction curDir;
 
     public static boolean allyPaintTower(RobotController rc, MapLocation loc) throws GameActionException {
         return rc.canSenseRobotAtLocation(loc) && rc.senseRobotAtLocation(loc).getTeam() == rc.getTeam() && rc.senseRobotAtLocation(loc).type == UnitType.LEVEL_ONE_PAINT_TOWER;
@@ -58,65 +57,75 @@ public class Mopper {
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
-        boolean moved = false;
-
-        // Mop a nearby tile
-        for (MapInfo tile : nearbyTiles) {
-            MapLocation target = tile.getMapLocation();
-            if (isMoppable(rc, target)) {
-                rc.attack(target);
-                break;
-            }
-        }
-
-        // Smart move direction
-        double moveScore[] = new double[9];
-        for (int i = 0; i < 9; i++) {
-            moveScore[i] = 0;
-        }
-        moveScore[8] = -5;
-        if (rc.getPaint() < 50) {
-            moveScore[myLoc.directionTo(closestPT).ordinal()] += 5;
-        }
-        for (MapInfo tile : nearbyTiles) {
-            final MapLocation loc = tile.getMapLocation();
-            final int dir = myLoc.directionTo(loc).ordinal();
-            final double dist = myLoc.distanceSquaredTo(loc);
-
-            if (!tile.getPaint().isAlly()) {
-                moveScore[dir] += dist <= 2 ? -10 : +1;
-            }
-
-            if (rc.canSenseRobotAtLocation(loc)) {
-                final RobotInfo r = rc.senseRobotAtLocation(loc);
-                if (r.getTeam() != rc.getTeam()) {
-                    switch (r.getType()) {
-                        case UnitType.SOLDIER -> moveScore[dir] -= 1;
-                        case UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_ONE_PAINT_TOWER -> moveScore[dir] -= 5;
+        if (rc.isActionReady()) {
+            // Withdraw paint
+            for (RobotInfo robot : nearbyRobots) {
+                MapLocation loc = robot.getLocation();
+                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && allyPaintTower(rc, loc)) {
+                    int delta = -1 * java.lang.Math.min(robot.paintAmount, 200 - rc.getPaint());
+                    if (delta < 0) {
+                        rc.transferPaint(loc, delta);
                     }
                 }
             }
-        }
-        int bestDir = -1;
-        for (int i = 0; i < 9; i++) {
-            if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
-                bestDir = i;
+
+            // Mop a nearby tile
+            for (MapInfo tile : nearbyTiles) {
+                MapLocation target = tile.getMapLocation();
+                if (isMoppable(rc, target)) {
+                    rc.attack(target);
+                    break;
+                }
             }
         }
-        if (!moved) {
-            if(bestDir == -1) bestDir = QRand.randInt(8);
-            rc.move(DIRS[bestDir]);
-            moved = true;
-        }
 
-        // Withdraw paint
-        for (RobotInfo robot : nearbyRobots) {
-            MapLocation loc = robot.getLocation();
-            if (myLoc.isWithinDistanceSquared(loc, 2) && allyPaintTower(rc, loc)) {
-                int delta = -1 * java.lang.Math.min(robot.paintAmount, 100 - rc.getPaint());
-                if (delta < 0) {
-                    rc.transferPaint(loc, delta);
+        if (rc.isMovementReady()) {
+            double[] moveScore = new double[9];
+            for (int i = 0; i < 9; i++) {
+                moveScore[i] = 0;
+            }
+
+            // Try not to stand still, especially if we're on enemy paint
+            moveScore[8] = -5;
+            if (!rc.senseMapInfo(myLoc).getPaint().isAlly()) {
+                moveScore[8] -= 10;
+            }
+
+            // Try to move towards a paint tower if we're low
+            if (closestPT != null && rc.getPaint() < 50) {
+                moveScore[myLoc.directionTo(closestPT).ordinal()] += 5;
+            }
+
+            for (MapInfo tile : nearbyTiles) {
+                final MapLocation loc = tile.getMapLocation();
+                final int dir = myLoc.directionTo(loc).ordinal();
+                final double dist = myLoc.distanceSquaredTo(loc);
+
+                // Get close to enemy paint, but not onto it
+                if (!tile.getPaint().isAlly()) {
+                    moveScore[dir] += dist <= 2 ? -5 : +1;
                 }
+
+                if (rc.canSenseRobotAtLocation(loc)) {
+                    final RobotInfo r = rc.senseRobotAtLocation(loc);
+                    if (r.getTeam() != rc.getTeam()) {
+                        switch (r.getType()) {
+                            // Moppers don't want to be in direct danger
+                            case UnitType.LEVEL_ONE_MONEY_TOWER, UnitType.LEVEL_ONE_PAINT_TOWER -> moveScore[dir] -= 5;
+                        }
+                    }
+                }
+            }
+
+            // TODO: Add probabilistic choice to avoid collisions?
+            int bestDir = -1;
+            for (int i = 0; i < 9; i++) {
+                if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
+                    bestDir = i;
+                }
+            }
+            if (bestDir != -1) {
+                rc.move(DIRS[bestDir]);
             }
         }
     }

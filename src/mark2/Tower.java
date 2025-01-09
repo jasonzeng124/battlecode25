@@ -22,8 +22,10 @@ public class Tower {
             for (int i = 7; i >= 0; i--) {
                 MapLocation nextLoc = rc.getLocation().add(directions[i ^ offset]);
                 UnitType type = UnitType.SOLDIER;
-                if (turnsActive >= 250 && QRand.randDouble() < 0.6) {
-                    type = UnitType.MOPPER;
+                if (turnsActive >= 100 && rc.getRoundNum() >= 400) {
+                    if (QRand.randDouble() < 0.55) {
+                        type = UnitType.MOPPER;
+                    }
                 }
                 if (rc.canBuildRobot(type, nextLoc)) {
                     rc.buildRobot(type, nextLoc);
