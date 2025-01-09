@@ -164,7 +164,7 @@ public class Soldier {
             MapLocation loc = robot.getLocation();
             if (rc.getLocation().isWithinDistanceSquared(loc, 2) && allyPaintTower(rc, loc)) {
                 int delta = -1 * java.lang.Math.min(robot.paintAmount, 200 - rc.getPaint());
-                if (delta < 0) {
+                if (delta < 0 && rc.canTransferPaint(loc, delta)) {
                     rc.transferPaint(loc, delta);
                 }
             }
