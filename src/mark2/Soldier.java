@@ -18,8 +18,8 @@ public class Soldier {
             Direction.CENTER
     };
 
-    public static int HOME_THRES = 100;
-    public static int BUILD_THRES = 125;
+    public static int HOME_THRES = 50;
+    public static int BUILD_THRES = 75;
 
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
