@@ -109,7 +109,10 @@ public class Soldier {
         for (int dx = -2; dx <= +2; dx++) {
             for (int dy = -2; dy <= +2; dy++) {
                 final MapLocation loc = VMath.addVec(myLoc, new MapLocation(dx, dy));
-                areaClear &= rc.canSenseLocation(loc) && rc.sensePassability(loc) && rc.senseMapInfo(loc).getMark() == PaintType.EMPTY;
+                if (!(rc.canSenseLocation(loc) && rc.sensePassability(loc) && rc.senseMapInfo(loc).getMark() == PaintType.EMPTY)) {
+                    areaClear = false;
+                    break;
+                }
             }
         }
         if (areaClear && rc.canMarkResourcePattern(myLoc)) {
