@@ -97,10 +97,24 @@ public class Soldier {
                             System.out.println("Built a tower at " + targetLoc + "!");
                         }
 
+<<<<<<< Updated upstream
                         // Upgrade the tower if we can.
                         if (rc.canUpgradeTower(targetLoc)) {
                             rc.upgradeTower(targetLoc);
                         }
+=======
+                    // Move closer. Turn clockwise around the ruin to view the whole area
+                    int idx = dir.ordinal();
+                    while (idx < 16 && !rc.canMove(DIRS[idx % 8])) {
+                        idx++;
+                    }
+                    idx %= 8;
+                    moveScore[idx] += 15;
+                } else {
+                    // Finished ruin, make improvements while passing by
+                    if (rc.canUpgradeTower(targetLoc)) {
+                        rc.upgradeTower(targetLoc);
+>>>>>>> Stashed changes
                     }
                 }
             }

@@ -17,7 +17,18 @@ public class Tower {
     static int turnsActive = 0;
 
     public static void makeAction(RobotController rc) throws GameActionException {
+<<<<<<< Updated upstream
         if (rc.isActionReady()) {
+=======
+        if (rc.isActionReady() && (rc.getRoundNum() < 100 || rc.getMoney() >= 1300)) {
+            UnitType type = UnitType.SOLDIER;
+            if (rc.getRoundNum() >= 300) {
+                if (QRand.randDouble() < 0.5) {
+                    type = UnitType.MOPPER;
+                }
+            }
+
+>>>>>>> Stashed changes
             final int offset = QRand.randInt(8);
             for (int i = 0; i < 8; i++) {
                 MapLocation nextLoc = rc.getLocation().add(directions[i ^ offset]);
