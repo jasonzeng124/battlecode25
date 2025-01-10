@@ -1,4 +1,4 @@
-package extremeviolence;
+package tactician_v1;
 
 import battlecode.common.*;
 
@@ -42,21 +42,11 @@ public class RobotPlayer {
         while (true) {
             try {
                 switch (myJob) {
-                    case NONE:
-                        rc.setIndicatorDot(rc.getLocation(), 255, 0, 0);
-                        break;
-                    case BASE:
-                        Tower.run(rc);
-                        break;
-                    case PAWN:
-                        Pawn.run(rc);
-                        break;
-                    case SETTLER:
-                        Pawn.run(rc);
-                        break;
-                    case RAIDER:
-                        Raider.run(rc);
-                        break;
+                    case NONE -> rc.setIndicatorDot(rc.getLocation(), 255, 0, 0);
+                    case BASE -> Tower.run(rc);
+                    case PAWN -> Pawn.run(rc);
+                    case RAIDER -> Raider.run(rc);
+                    default -> System.err.println("Unknown unit type");
                 }
             } catch (GameActionException e) {
                 System.out.println("GameActionException");

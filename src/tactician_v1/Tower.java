@@ -1,4 +1,4 @@
-package extremeviolence;
+package tactician_v1;
 
 import battlecode.common.*;
 
@@ -59,12 +59,16 @@ public class Tower {
             if (rc.canSendMessage(loc) && !dispatched.contains(robot.getID())) {
                 int res = 0;
 
-                res |= guessA.x;
-                res |= guessA.y << 6;
-                res |= guessA.x << 12;
-                res |= guessB.y << 18;
+                if (rc.getRoundNum() < 10) {
+                    res |= guessA.x;
+                    res |= guessA.y << 6;
+                    res |= guessA.x << 12;
+                    res |= guessB.y << 18;
 
-                res |= 3 << 24;
+                    res |= 3 << 24;
+                } else {
+                    res |= 1 << 24;
+                }
 
                 rc.sendMessage(loc, res);
                 dispatched.add(robot.getID());

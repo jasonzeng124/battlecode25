@@ -1,4 +1,4 @@
-package extremeviolence;
+package tactician_v1;
 
 import java.util.Random;
 
