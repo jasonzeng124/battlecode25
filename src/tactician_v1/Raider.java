@@ -75,8 +75,8 @@ public class Raider {
         if (rc.isMovementReady()) {
             // Combat micro, conserve a bit of paint while constantly attacking
             if (onTarget(rc.getLocation())) {
-                int bestScore = -1;
-                Direction bestMove = null;
+                int bestScore = -100;
+                Direction bestMove = Direction.CENTER;
                 for (int i = 0; i < 9; i++) {
                     final MapLocation loc = rc.getLocation().add(DIRS[i]);
                     if (rc.canMove(DIRS[i]) && onTarget(loc)) {
@@ -85,8 +85,11 @@ public class Raider {
                             score -= 2;
                         if (rc.senseMapInfo(loc).getPaint().isAlly())
                             score += 2;
-                        if (rc.canSenseRobotAtLocation(loc) && rc.senseRobotAtLocation(loc).type == UnitType.MOPPER)
-                            score -= 1;
+                        for (int j = 0; j < 8; j++) {
+                            final MapLocation loc2 = loc.add(DIRS[j]);
+                            if (rc.canSenseRobotAtLocation(loc2) && rc.senseRobotAtLocation(loc2).type == UnitType.MOPPER)
+                                score -= 1;
+                        }
                         if (score > bestScore) {
                             bestScore = score;
                             bestMove = DIRS[i];
@@ -98,7 +101,6 @@ public class Raider {
                 // Make a beeline for the target
                 rc.move(greedyPath(rc, rc.getLocation(), target));
                 rc.setIndicatorDot(target, 255, 0, 0);
-                rc.setIndicatorDot(target, 0, 255, 0);
             }
         }
 
