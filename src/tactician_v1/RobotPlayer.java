@@ -3,6 +3,7 @@ package tactician_v1;
 import battlecode.common.*;
 
 public class RobotPlayer {
+    static boolean init = false;
 
     enum Job {
         // Unemployment arc
@@ -24,8 +25,13 @@ public class RobotPlayer {
 
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
-        if (rc.getType().isTowerType()) {
-            myJob = Job.BASE;
+        if (!init) {
+            if (rc.getType().isTowerType()) {
+                myJob = Job.BASE;
+            }
+            if (rc.getType() == UnitType.SOLDIER) {
+                myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
+            }
         }
 
         for (Message msg : rc.readMessages(-1)) {

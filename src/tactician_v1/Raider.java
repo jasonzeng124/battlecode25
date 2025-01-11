@@ -11,12 +11,12 @@ public class Raider {
             Direction.SOUTH,
             Direction.SOUTHWEST,
             Direction.WEST,
-            Direction.NORTHWEST
+            Direction.NORTHWEST,
+            Direction.CENTER
     };
 
-    public static MapLocation guessA, guessB;
-    public static boolean go = false;
-    public static boolean doneA = false, doneB = false;
+    public static boolean init = false;
+    public static MapLocation target;
 
     static Direction greedyPath(RobotController rc, MapLocation a, MapLocation b) {
         final int idx = a.directionTo(b).ordinal();
@@ -38,43 +38,75 @@ public class Raider {
         return null;
     }
 
+    static boolean onTarget(MapLocation loc) {
+        return loc.isWithinDistanceSquared(target, 9);
+    }
+
     public static void makeAction(RobotController rc) throws GameActionException {
-        for (Message msg : rc.readMessages(-1)) {
-            final int b = msg.getBytes();
-            guessA = new MapLocation(b & 63, (b >> 6) & 63);
-            guessB = new MapLocation((b >> 12) & 63, (b >> 18) & 63);
-            go = true;
+        if (!init) {
+            MapLocation loc = rc.getLocation();
+            for (RobotInfo r : rc.senseNearbyRobots()) {
+                if (r.team.isPlayer() && r.type.isTowerType()) {
+                    loc = r.getLocation();
+                    break;
+                }
+            }
+            final int width = rc.getMapWidth(), height = rc.getMapHeight();
+            final int x = loc.x, y = loc.y;
+            int targetX = x, targetY = y;
+            if (Math.abs(x - width / 2) > width / 5)
+                targetX = width - x - 1;
+            if (Math.abs(y - height / 2) > height / 5)
+                targetY = height - y - 1;
+            target = new MapLocation(targetX, targetY);
+
+            init = true;
         }
 
-        if (rc.isMovementReady() && go) {
-            rc.move(greedyPath(rc, rc.getLocation(), doneA ? guessB : guessA));
-            rc.setIndicatorDot(guessA, 255, 0, 0);
-            rc.setIndicatorDot(guessB, 0, 255, 0);
+        if (rc.isMovementReady()) {
+            if (onTarget(rc.getLocation())) {
+                int bestScore = -1;
+                Direction bestMove = null;
+                for (int i = 0; i < 9; i++) {
+                    final MapLocation loc = rc.getLocation().add(DIRS[i]);
+                    if (rc.canMove(DIRS[i]) && onTarget(loc)) {
+                        int score = 0;
+                        if (rc.senseMapInfo(loc).getPaint().isEnemy())
+                            score -= 2;
+                        if (rc.senseMapInfo(loc).getPaint().isAlly())
+                            score += 2;
+                        if (rc.canSenseRobotAtLocation(loc) && rc.senseRobotAtLocation(loc).type == UnitType.MOPPER)
+                            score -= 1;
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = DIRS[i];
+                        }
+                    }
+                }
+                rc.move(bestMove);
+            } else {
+                rc.move(greedyPath(rc, rc.getLocation(), target));
+                rc.setIndicatorDot(target, 255, 0, 0);
+                rc.setIndicatorDot(target, 0, 255, 0);
+            }
         }
 
-        if (rc.isActionReady() && go) {
+        if (rc.isActionReady() && onTarget(rc.getLocation())) {
             boolean attacked = false;
 
             for (RobotInfo robot : rc.senseNearbyRobots()) {
                 final MapLocation loc = robot.getLocation();
 
-                if (robot.team != rc.getTeam() && rc.canAttack(loc)) {
+                if (robot.type.isTowerType() && robot.team != rc.getTeam() && rc.canAttack(loc)) {
                     rc.attack(loc);
                     attacked = true;
                     break;
                 }
             }
 
-            if (rc.getLocation().isWithinDistanceSquared(guessA, 9) && !doneA && !attacked) {
-                doneA = true;
+            if (!attacked) {
+                RobotPlayer.myJob = RobotPlayer.Job.PAWN;
             }
-            if (rc.getLocation().isWithinDistanceSquared(guessB, 9) && !doneB && !attacked) {
-                doneB = true;
-            }
-        }
-
-        if (doneA && doneB) {
-            RobotPlayer.myJob = RobotPlayer.Job.PAWN;
         }
     }
 
