@@ -66,17 +66,20 @@ public class Raider {
 
         // Once it comes into range, pinpoint it
         for (RobotInfo r : rc.senseNearbyRobots()) {
-            if (r.team != rc.getTeam() && r.type.isTowerType()) {
+            if (r.team != rc.getTeam() && r.type.isTowerType() && rc.getLocation().isWithinDistanceSquared(target, 2)) {
                 target = r.getLocation();
                 break;
             }
         }
 
+        // For debug purposes
+        rc.setIndicatorDot(target, 255, 0, 0);
+
         if (rc.isMovementReady()) {
             // Combat micro, conserve a bit of paint while constantly attacking
             if (onTarget(rc.getLocation())) {
                 int bestScore = -100;
-                Direction bestMove = Direction.CENTER;
+                Direction bestMove = null; // Should never stay null
                 for (int i = 0; i < 9; i++) {
                     final MapLocation loc = rc.getLocation().add(DIRS[i]);
                     if (rc.canMove(DIRS[i]) && onTarget(loc)) {
@@ -100,7 +103,6 @@ public class Raider {
             } else {
                 // Make a beeline for the target
                 rc.move(greedyPath(rc, rc.getLocation(), target));
-                rc.setIndicatorDot(target, 255, 0, 0);
             }
         }
 

@@ -64,6 +64,6 @@ public class GameUtils {
                 return DIRS[order[i]];
             }
         }
-        return null;
+        return Direction.CENTER;
     }
 }
