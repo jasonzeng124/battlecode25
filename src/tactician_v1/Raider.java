@@ -43,6 +43,7 @@ public class Raider {
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
+        // Initialize estimated target location
         if (!init) {
             MapLocation loc = rc.getLocation();
             for (RobotInfo r : rc.senseNearbyRobots()) {
@@ -63,7 +64,16 @@ public class Raider {
             init = true;
         }
 
+        // Once it comes into range, pinpoint it
+        for (RobotInfo r : rc.senseNearbyRobots()) {
+            if (r.team != rc.getTeam() && r.type.isTowerType()) {
+                target = r.getLocation();
+                break;
+            }
+        }
+
         if (rc.isMovementReady()) {
+            // Combat micro, conserve a bit of paint while constantly attacking
             if (onTarget(rc.getLocation())) {
                 int bestScore = -1;
                 Direction bestMove = null;
@@ -85,12 +95,14 @@ public class Raider {
                 }
                 rc.move(bestMove);
             } else {
+                // Make a beeline for the target
                 rc.move(greedyPath(rc, rc.getLocation(), target));
                 rc.setIndicatorDot(target, 255, 0, 0);
                 rc.setIndicatorDot(target, 0, 255, 0);
             }
         }
 
+        // We're on the target, attack
         if (rc.isActionReady() && onTarget(rc.getLocation())) {
             boolean attacked = false;
 
@@ -104,6 +116,7 @@ public class Raider {
                 }
             }
 
+            // The target is dead
             if (!attacked) {
                 RobotPlayer.myJob = RobotPlayer.Job.PAWN;
             }

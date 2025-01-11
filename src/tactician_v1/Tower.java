@@ -24,7 +24,7 @@ public class Tower {
         if (rc.isActionReady() && (rc.getRoundNum() < 100 || rc.getMoney() >= 1300)) {
             UnitType type = UnitType.SOLDIER;
 
-            if (rc.getRoundNum() >= 200 && FastMath.fakefloat() < 0.3)
+            if (rc.getRoundNum() >= 250 && FastMath.fakefloat() < 0.3)
                 type = UnitType.MOPPER;
 
             final int offset = FastMath.rand256() % 8;
