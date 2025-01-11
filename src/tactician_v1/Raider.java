@@ -47,7 +47,7 @@ public class Raider {
         if (!init) {
             MapLocation loc = rc.getLocation();
             for (RobotInfo r : rc.senseNearbyRobots()) {
-                if (r.team.isPlayer() && r.type.isTowerType()) {
+                if (r.team.isPlayer() && r.type.isTowerType() && rc.getLocation().isWithinDistanceSquared(loc, 2)) {
                     loc = r.getLocation();
                     break;
                 }
@@ -55,9 +55,9 @@ public class Raider {
             final int width = rc.getMapWidth(), height = rc.getMapHeight();
             final int x = loc.x, y = loc.y;
             int targetX = x, targetY = y;
-            if (Math.abs(x - width / 2) > width / 5)
+            if (Math.abs(x - width / 2) > width / 6)
                 targetX = width - x - 1;
-            if (Math.abs(y - height / 2) > height / 5)
+            if (Math.abs(y - height / 2) > height / 6)
                 targetY = height - y - 1;
             target = new MapLocation(targetX, targetY);
 
