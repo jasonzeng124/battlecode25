@@ -1,7 +1,6 @@
 package tactician_v1;
 
 import battlecode.common.*;
-import mark2.GameUtils;
 
 public class Mopper {
     public static final Direction[] DIRS = {
@@ -44,30 +43,31 @@ public class Mopper {
     }
 
     public static boolean isMoppable(RobotController rc, MapLocation loc) throws GameActionException {
-        return rc.getLocation().isWithinDistanceSquared(loc, 2) && rc.canAttack(loc) && mark2.GameUtils.hasEnemyTile(rc, loc);
+        return rc.getLocation().isWithinDistanceSquared(loc, 2) && rc.canAttack(loc) && GameUtils.hasEnemyTile(rc, loc);
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
         final int curRound = rc.getRoundNum();
 
-        if (rc.isActionReady()) {
-            // Withdraw paint
+        // Withdraw paint
+        if (rc.isActionReady() && rc.getPaint() < 50) {
             for (RobotInfo robot : nearbyRobots) {
                 MapLocation loc = robot.getLocation();
-                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && allyPaintTower(rc, loc) && robot.getPaintAmount() >= 200) {
-                    int delta = -1 * Math.min(robot.paintAmount, 200 - rc.getPaint());
+                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && GameUtils.hasAllyPaintTower(rc, loc) && robot.getPaintAmount() >= 50) {
+                    int delta = -1 * java.lang.Math.min(robot.paintAmount, 100 - rc.getPaint());
                     if (delta < 0) {
                         rc.transferPaint(loc, delta);
                     }
                 }
             }
+        }
 
-            // Mop a nearby tile
+        // Try to mop something
+        if (rc.isActionReady()) {
             for (MapInfo tile : nearbyTiles) {
                 MapLocation target = tile.getMapLocation();
                 if (isMoppable(rc, target)) {
                     rc.attack(target);
-                    break;
                 }
             }
         }
@@ -78,15 +78,15 @@ public class Mopper {
                 moveScore[i] = 0;
             }
 
-            // Try not to stand still, especially if we're on enemy paint
-            moveScore[8] = -5;
-            if (!rc.senseMapInfo(myLoc).getPaint().isAlly()) {
-                moveScore[8] -= 10;
-            }
-
             // Try to move towards a paint tower if we're low
             if (closestPT != null && rc.getPaint() < HOME_THRES) {
-                moveScore[myLoc.directionTo(closestPT).ordinal()] += 10;
+                moveScore[GameUtils.greedyPath(rc, myLoc, closestPT).ordinal()] += 10;
+            }
+
+            // Try not to stand still if we're on enemy paint
+            moveScore[8] = -1;
+            if (GameUtils.hasEnemyTile(rc, myLoc)) {
+                moveScore[8] -= 15;
             }
 
             for (MapInfo tile : nearbyTiles) {
@@ -94,14 +94,9 @@ public class Mopper {
                 final int dir = myLoc.directionTo(loc).ordinal();
                 final double dist = myLoc.distanceSquaredTo(loc);
 
-                // Try not to walk on bare ground, not a hard rule, and only when going home
-                if (rc.getPaint() < HOME_THRES) {
-                    moveScore[dir] += mark2.GameUtils.hasEnemyTile(rc, loc) ? -3 : 0;
-                }
-
                 // Get close to enemy paint, but not onto it
                 if (GameUtils.isEnemyTile(tile)) {
-                    moveScore[dir] += dist <= 2 ? -100 : +1;
+                    moveScore[dir] += dist <= 2 ? -25 : +1.5;
                 }
 
                 if (rc.canSenseRobotAtLocation(loc)) {

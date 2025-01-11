@@ -18,24 +18,15 @@ public class Soldier {
             Direction.CENTER
     };
 
-    public static int HOME_THRES = 100;
-    public static int BUILD_THRES = 125;
-
     public static MapInfo[] nearbyTiles;
-    public static RobotInfo[] nearbyRobots;
 
     public static MapLocation myLoc, closestPT;
 
     public static int prevDir;
 
-    public static boolean shouldWorkHere(RobotController rc, MapInfo tile) throws GameActionException {
-        return (tile.hasRuin() && !rc.canSenseRobotAtLocation(tile.getMapLocation())) || rc.canUpgradeTower(tile.getMapLocation());
-    }
-
     public static void updateNearby(RobotController rc) throws GameActionException {
         myLoc = rc.getLocation();
         nearbyTiles = rc.senseNearbyMapInfos();
-        nearbyRobots = rc.senseNearbyRobots();
 
         for (MapInfo tile : nearbyTiles) {
             // Maintain the closest paint tower for refills
@@ -57,24 +48,19 @@ public class Soldier {
     public static void makeAction(RobotController rc) throws GameActionException {
         final int curRound = rc.getRoundNum();
 
-        double moveScore[] = new double[9];
+        double[] moveScore = new double[9];
         for (int i = 0; i < 9; i++) {
             moveScore[i] = 0;
         }
 
-        // If there's a ruin to work on, and we have resources, prioritize that
-        if (rc.getPaint() >= BUILD_THRES) {
-            for (MapInfo tile : nearbyTiles) {
-                if (shouldWorkHere(rc, tile)) {
-                    final MapLocation targetLoc = tile.getMapLocation();
-                    final Direction dir = rc.getLocation().directionTo(targetLoc);
+        for (MapInfo tile : nearbyTiles) {
+            if (tile.hasRuin()) {
+                final MapLocation targetLoc = tile.getMapLocation();
+                final Direction dir = rc.getLocation().directionTo(targetLoc);
 
-                    // Move close to the ruin while working on it
-                    if (rc.isMovementReady() && rc.canMove(dir)) {
-                        rc.move(dir);
-                    }
-
-                    // Chance to build a money tower
+                // Unfinished ruin
+                if (!rc.canSenseRobotAtLocation(tile.getMapLocation())) {
+                    // Decide which type of tower to build
                     UnitType type = (targetLoc.x + targetLoc.y) % 2 == 0 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
 
                     // Mark the pattern we need to draw to build a tower here if we haven't already.
@@ -84,48 +70,60 @@ public class Soldier {
                         System.out.println("Trying to build a tower at " + targetLoc);
                     }
 
-                    if (rc.isActionReady()) {
-                        // Fill in any spots in the pattern with the appropriate paint.
-                        for (MapInfo patternTile : rc.senseNearbyMapInfos(targetLoc, 8)) {
-                            if (patternTile.getMark() != patternTile.getPaint() && patternTile.getMark() != PaintType.EMPTY) {
-                                boolean useSecondaryColor = patternTile.getMark() == PaintType.ALLY_SECONDARY;
-                                if (rc.canAttack(patternTile.getMapLocation())) {
-                                    rc.attack(patternTile.getMapLocation(), useSecondaryColor);
-                                }
+                    // Fill in any spots in the pattern with the appropriate paint.
+                    for (MapInfo patternTile : rc.senseNearbyMapInfos(targetLoc, 8)) {
+                        if (patternTile.getMark() != patternTile.getPaint() && patternTile.getMark() != PaintType.EMPTY) {
+                            boolean useSecondaryColor = patternTile.getMark() == PaintType.ALLY_SECONDARY;
+                            if (rc.canAttack(patternTile.getMapLocation())) {
+                                rc.attack(patternTile.getMapLocation(), useSecondaryColor);
                             }
                         }
+                    }
 
-                        // Complete the ruin if we can.
-                        if (rc.canCompleteTowerPattern(type, targetLoc)) {
-                            rc.completeTowerPattern(type, targetLoc);
-                            rc.setTimelineMarker("Tower built", 0, 255, 0);
-                            System.out.println("Built a tower at " + targetLoc + "!");
-                        }
+                    // Complete the ruin if we can.
+                    if (rc.canCompleteTowerPattern(type, targetLoc)) {
+                        rc.completeTowerPattern(type, targetLoc);
+                        rc.setTimelineMarker("Tower built", 0, 255, 0);
+                        System.out.println("Built a tower at " + targetLoc + "!");
+                    }
 
-                        // Upgrade the tower if we can.
-                        if (rc.canUpgradeTower(targetLoc)) {
-                            rc.upgradeTower(targetLoc);
-                        }
-                        // Move closer. Turn clockwise around the ruin to view the whole area
-                        int idx = dir.ordinal();
-                        while (idx < 16 && !rc.canMove(DIRS[idx % 8])) {
-                            idx++;
-                        }
-                        idx %= 8;
-                        moveScore[idx] += 15;
-                    } else {
-                        // Finished ruin, make improvements while passing by
-                        if (rc.canUpgradeTower(targetLoc)) {
-                            rc.upgradeTower(targetLoc);
-                        }
+                    // Move closer. Turn clockwise around the ruin to view the whole area
+                    int idx = dir.ordinal();
+                    while (idx < 16 && !rc.canMove(DIRS[idx % 8])) {
+                        idx++;
+                    }
+                    idx %= 8;
+                    moveScore[idx] += 15;
+                } else {
+                    // Finished ruin, make improvements while passing by
+                    if (rc.canUpgradeTower(targetLoc)) {
+                        rc.upgradeTower(targetLoc);
                     }
                 }
             }
         }
 
-        if (rc.isActionReady()) {
-            // Withdraw paint
-            for (RobotInfo robot : nearbyRobots) {
+        // Mark resource patterns on clear areas
+        boolean areaClear = true;
+        for (int dx = -2; dx <= +2; dx++) {
+            for (int dy = -2; dy <= +2; dy++) {
+                final MapLocation loc = VMath.addVec(myLoc, new MapLocation(dx, dy));
+                if (!(rc.canSenseLocation(loc) && rc.sensePassability(loc) && rc.senseMapInfo(loc).getMark() == PaintType.EMPTY)) {
+                    areaClear = false;
+                    break;
+                }
+            }
+        }
+        if (areaClear && rc.canMarkResourcePattern(myLoc)) {
+            rc.markResourcePattern(myLoc);
+        }
+        if (rc.canCompleteResourcePattern(myLoc)) {
+            rc.completeResourcePattern(myLoc);
+        }
+
+        // Withdraw paint
+        if (rc.isActionReady() && rc.getPaint() < 150) {
+            for (RobotInfo robot : rc.senseNearbyRobots()) {
                 MapLocation loc = robot.getLocation();
                 if (rc.getLocation().isWithinDistanceSquared(loc, 2) && GameUtils.hasAllyPaintTower(rc, loc) && robot.getPaintAmount() >= 50) {
                     int delta = -1 * java.lang.Math.min(robot.paintAmount, 200 - rc.getPaint());
@@ -134,17 +132,17 @@ public class Soldier {
                     }
                 }
             }
+        }
 
-            // Try to paint, prioritizing our current tile first and everything else randomly
-            if (rc.getPaint() >= BUILD_THRES) {
-                if (isPaintable(rc, myLoc)) {
-                    rc.attack(myLoc);
-                }
-                for (MapInfo tile : nearbyTiles) {
-                    MapLocation target = tile.getMapLocation();
-                    if (isPaintable(rc, target)) {
-                        rc.attack(target);
-                    }
+        // Try to paint, prioritizing our current tile first and everything else randomly
+        if (rc.isActionReady() && rc.getPaint() >= 75) {
+            if (isPaintable(rc, myLoc)) {
+                rc.attack(myLoc);
+            }
+            for (MapInfo tile : nearbyTiles) {
+                MapLocation target = tile.getMapLocation();
+                if (isPaintable(rc, target)) {
+                    rc.attack(target, tile.getMark() == PaintType.ALLY_SECONDARY);
                 }
             }
         }
@@ -154,8 +152,8 @@ public class Soldier {
             moveScore[prevDir] += 5;
 
             // Try to move towards a paint tower if we're low
-            if (closestPT != null && rc.getPaint() < HOME_THRES) {
-                moveScore[myLoc.directionTo(closestPT).ordinal()] += 10;
+            if (closestPT != null && rc.getPaint() < 50) {
+                moveScore[myLoc.directionTo(closestPT).ordinal()] += 50;
             }
 
             for (MapInfo tile : nearbyTiles) {
@@ -163,20 +161,22 @@ public class Soldier {
                 final int dir = myLoc.directionTo(loc).ordinal();
                 final double dist = myLoc.distanceSquaredTo(loc);
 
-                // Try not to walk on bare ground, not a hard rule
-                moveScore[dir] += GameUtils.hasEnemyTile(rc, loc) ? -3 : 0;
-
                 // Get close to enemy paint, but not onto it
                 if (GameUtils.isEnemyTile(tile)) {
-                    moveScore[dir] += dist <= 2 ? -100 : +1;
+                    moveScore[dir] += dist <= 2 ? -20 : +0.5;
+                }
+
+                // Prioritize empty tiles!
+                if (tile.getPaint() == PaintType.EMPTY) {
+                    moveScore[dir] += dist <= 2 ? -5 : +1.5;
                 }
 
                 if (rc.canSenseRobotAtLocation(loc)) {
                     final RobotInfo r = rc.senseRobotAtLocation(loc);
                     if (r.getTeam() == rc.getTeam()) {
                         switch (r.getType()) {
-                            case UnitType.SOLDIER -> moveScore[dir] -= 1;
-                            case UnitType.MOPPER -> moveScore[dir] += 0.5;
+                            case UnitType.SOLDIER -> moveScore[dir] += curRound < 400 ? -10 : -0.5;
+                            case UnitType.MOPPER -> moveScore[dir] += 2.0;
                         }
                     }
                 }
