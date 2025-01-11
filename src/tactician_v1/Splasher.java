@@ -2,8 +2,9 @@ package tactician_v1;
 
 import battlecode.common.*;
 
-public class Mopper {
-    public static final Direction[] DIRS = {
+public class Splasher {
+
+    private static final Direction[] DIRS = {
             Direction.NORTH,
             Direction.NORTHEAST,
             Direction.EAST,
@@ -22,6 +23,20 @@ public class Mopper {
     public static MapLocation myLoc, spawnLoc, closestPT;
     private static Direction prvDir = null;
 
+    public static void updateNearby(RobotController rc) throws GameActionException {
+        if (spawnLoc == null) {
+            spawnLoc = rc.getLocation();
+        }
+        myLoc = rc.getLocation();
+        nearbyTiles = rc.senseNearbyMapInfos();
+        nearbyRobots = rc.senseNearbyRobots();
+        for (MapInfo tile : nearbyTiles) {
+            if (allyPaintTower(rc, tile.getMapLocation())) {
+                closestPT = tile.getMapLocation();
+            }
+        }
+    }
+
     public static boolean allyPaintTower(
         RobotController rc, MapLocation loc
     ) throws GameActionException {
@@ -36,27 +51,6 @@ public class Mopper {
             tp == UnitType.LEVEL_ONE_PAINT_TOWER || tp == UnitType.LEVEL_TWO_PAINT_TOWER ||
             tp == UnitType.LEVEL_THREE_PAINT_TOWER
         );
-    }
-
-    public static void updateNearby(RobotController rc) throws GameActionException {
-        if (spawnLoc == null) {
-            spawnLoc = rc.getLocation();
-        }
-
-        myLoc = rc.getLocation();
-        nearbyTiles = rc.senseNearbyMapInfos();
-        nearbyRobots = rc.senseNearbyRobots();
-
-        for (MapInfo tile : nearbyTiles) {
-            // Maintain the closest paint tower for refills
-            if (allyPaintTower(rc, tile.getMapLocation())) {
-                closestPT = tile.getMapLocation();
-            }
-        }
-    }
-
-    public static boolean isMoppable(RobotController rc, MapLocation loc) throws GameActionException {
-        return rc.getLocation().isWithinDistanceSquared(loc, 2) && rc.canAttack(loc) && GameUtils.hasEnemyTile(rc, loc);
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
@@ -77,11 +71,35 @@ public class Mopper {
 
         // Try to mop something
         if (rc.isActionReady()) {
+            MapLocation loc = null;
+            int scr = 0;
             for (MapInfo tile : nearbyTiles) {
-                MapLocation target = tile.getMapLocation();
-                if (isMoppable(rc, target)) {
-                    rc.attack(target);
+                final MapLocation tgt = tile.getMapLocation();
+                if (!rc.canAttack(tgt)) {
+                    continue;
                 }
+                int cnt = 0;
+                int curScr = 0;
+                for (MapInfo curTile : rc.senseNearbyMapInfos(tgt, 4)) {
+                    final PaintType tp = curTile.getPaint();
+                    if (tp == PaintType.ALLY_PRIMARY || tp == PaintType.ALLY_SECONDARY) {
+                        curScr -= 15;
+                        ++cnt;
+                    } else if (tp == PaintType.EMPTY) {
+                        curScr += 5;
+                    } else {
+                        curScr += 10;
+                    }
+                }
+                if (cnt < 4) {
+                    if (curScr > scr) {
+                        loc = tgt;
+                        scr = curScr;
+                    }
+                }
+            }
+            if (loc != null) {
+                rc.attack(loc);
             }
         }
 
@@ -146,11 +164,15 @@ public class Mopper {
         }
 
         assert rc.getRoundNum() == curRound : "Mopper: Bytecode limit exceeded";
+
     }
 
-    @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
+
         updateNearby(rc);
+
         makeAction(rc);
+
     }
+
 }

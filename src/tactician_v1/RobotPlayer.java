@@ -20,6 +20,7 @@ public class RobotPlayer {
         // Moppers:
             MOPPER,
             GUARD, // Focused on defending against enemy raider-like units
+            SPLASHER
     };
 
     static Job myJob = Job.NONE;
@@ -33,6 +34,9 @@ public class RobotPlayer {
                 myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
             if (rc.getType() == UnitType.MOPPER)
                 myJob = Job.MOPPER;
+            if (rc.getType() == UnitType.SPLASHER) {
+                myJob = Job.SPLASHER;
+            }
         }
 
         while (true) {
@@ -43,6 +47,7 @@ public class RobotPlayer {
                     case PAWN -> Pawn.run(rc);
                     case RAIDER -> Raider.run(rc);
                     case MOPPER -> Mopper.run(rc);
+                    case SPLASHER -> Splasher.run(rc);
                     default -> System.err.println("Unknown unit type");
                 }
             } catch (GameActionException e) {

@@ -3,6 +3,7 @@ package tactician_v1;
 import battlecode.common.*;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Tower {
     public static final Direction[] directions = {
@@ -17,15 +18,28 @@ public class Tower {
     };
 
     static ArrayList<Integer> dispatched = new ArrayList<>();
+    static Random rand = new Random();
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
         FastMath.initRand(rc);
 
-        if (rc.isActionReady() && (rc.getRoundNum() < 100 || rc.getMoney() >= 1300)) {
+        if (
+            rc.isActionReady() &&
+            (rc.getRoundNum() < 100 || rc.getMoney() >= 1300 && rc.getPaint() >= 300)
+        ) {
             UnitType type = UnitType.SOLDIER;
 
-            if (rc.getRoundNum() >= 250 && FastMath.fakefloat() < 0.3)
+            if (rc.getRoundNum() >= 250 && rand.nextDouble() < 0.3)
                 type = UnitType.MOPPER;
+
+            if (rc.getRoundNum() >= 500) {
+                final double val = rand.nextDouble();
+                if (val < 0.3) {
+                    type = UnitType.MOPPER;
+                } else if (val < 0.6) {
+                    type = UnitType.SPLASHER;
+                }
+            }
 
             final int offset = FastMath.rand256() % 8;
             for (int i = 0; i < 8; i++) {
