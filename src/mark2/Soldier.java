@@ -1,11 +1,11 @@
-package tactician_v1;
+package mark2;
 
 import battlecode.common.*;
 
 import java.util.ArrayList;
 import java.util.Random;
 
-public class Pawn {
+public class Soldier {
     public static final Direction[] DIRS = {
             Direction.NORTH,
             Direction.NORTHEAST,

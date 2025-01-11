@@ -19,10 +19,14 @@ public class Tower {
     static ArrayList<Integer> dispatched = new ArrayList<>();
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
+        FastMath.initRand(rc);
+
         if (rc.isActionReady()) {
             UnitType type = UnitType.SOLDIER;
 
-            FastMath.initRand(rc);
+            if (rc.getRoundNum() >= 100 && FastMath.fakefloat() < 0.5)
+                type = UnitType.MOPPER;
+
             final int offset = FastMath.rand256() % 8;
             for (int i = 0; i < 8; i++) {
                 final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);

@@ -18,6 +18,7 @@ public class RobotPlayer {
             RAIDER, // Try to swiftly destroy a tower at the target location(s), and become a settler if we survive.
 
         // Moppers:
+            MOPPER,
             GUARD, // Focused on defending against enemy raider-like units
     };
 
@@ -26,23 +27,12 @@ public class RobotPlayer {
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
         if (!init) {
-            if (rc.getType().isTowerType()) {
+            if (rc.getType().isTowerType())
                 myJob = Job.BASE;
-            }
-            if (rc.getType() == UnitType.SOLDIER) {
+            if (rc.getType() == UnitType.SOLDIER)
                 myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
-            }
-        }
-
-        for (Message msg : rc.readMessages(-1)) {
-            final int b = (msg.getBytes() >> 24) & 63;
-            switch (b) {
-                case 0 -> myJob = Job.NONE;
-                case 1 -> myJob = Job.PAWN;
-                case 2 -> myJob = Job.SETTLER;
-                case 3 -> myJob = Job.RAIDER;
-                case 4 -> myJob = Job.GUARD;
-            }
+            if (rc.getType() == UnitType.MOPPER)
+                myJob = Job.MOPPER;
         }
 
         while (true) {
@@ -52,6 +42,7 @@ public class RobotPlayer {
                     case BASE -> Tower.run(rc);
                     case PAWN -> Pawn.run(rc);
                     case RAIDER -> Raider.run(rc);
+                    case MOPPER -> Mopper.run(rc);
                     default -> System.err.println("Unknown unit type");
                 }
             } catch (GameActionException e) {
