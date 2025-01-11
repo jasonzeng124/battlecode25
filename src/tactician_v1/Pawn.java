@@ -34,12 +34,16 @@ public class Pawn {
         return null;
     }
 
+    public static boolean defaultColor(MapLocation loc) {
+        return ((loc.x + loc.y) % 2 == 0) && (((3 * loc.x + loc.y) % 10) != 0);
+    }
+
     public static void makeAction(RobotController rc) throws GameActionException {
         for (MapInfo tile : rc.senseNearbyMapInfos()) {
             final MapLocation loc = tile.getMapLocation();
 
-            if (rc.canAttack(loc) && tile.getPaint() == PaintType.EMPTY) {
-                rc.attack(loc, Precomp.DEF_PATTERN[loc.x][loc.y]);
+            if (rc.canAttack(loc) && tile.getPaint() == PaintType.EMPTY && !tile.hasRuin()) {
+                rc.attack(loc, defaultColor(loc));
                 break;
             }
         }
