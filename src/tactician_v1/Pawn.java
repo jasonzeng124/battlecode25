@@ -80,7 +80,7 @@ public class Pawn {
 
         for (MapInfo tile : nearbyTiles) {
             // Ruins are our top priority
-            if (tile.hasRuin()) {
+            if (rc.getNumberTowers() < 25 && tile.hasRuin()) {
                 final MapLocation loc = tile.getMapLocation();
 
                 // Unfinished ruin

@@ -67,7 +67,7 @@ public class Raider {
                             score -= 2;
                         if (rc.senseMapInfo(loc).getPaint().isAlly())
                             score += 2;
-                        for (int j = 0; j < 8; j++) {
+                        for (int j = 8; --j >= 0;) {
                             final MapLocation loc2 = loc.add(DIRS[j]);
                             if (rc.canSenseRobotAtLocation(loc2) && rc.senseRobotAtLocation(loc2).type == UnitType.MOPPER)
                                 score -= 1;
