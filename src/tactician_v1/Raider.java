@@ -61,13 +61,13 @@ public class Raider {
                 Direction bestMove = null; // Should never stay null
                 for (int i = 9; --i >= 0;) {
                     final MapLocation loc = rc.getLocation().add(DIRS[i]);
-                    if (rc.canMove(DIRS[i]) && onTarget(loc)) {
+                    if ((rc.canMove(DIRS[i]) || DIRS[i] == Direction.CENTER) && onTarget(loc)) {
                         int score = 0;
                         if (rc.senseMapInfo(loc).getPaint().isEnemy())
                             score -= 2;
                         if (rc.senseMapInfo(loc).getPaint().isAlly())
                             score += 2;
-                        for (int j = 8; --j >= 0;) {
+                        for (int j = 8; --j >= 0; ) {
                             final MapLocation loc2 = loc.add(DIRS[j]);
                             if (rc.canSenseRobotAtLocation(loc2) && rc.senseRobotAtLocation(loc2).type == UnitType.MOPPER)
                                 score -= 1;
@@ -78,7 +78,8 @@ public class Raider {
                         }
                     }
                 }
-                rc.move(bestMove);
+                if (bestMove != Direction.CENTER)
+                    rc.move(bestMove);
             } else {
                 // Make a beeline for the target
                 rc.move(GameUtils.greedyPath(rc, rc.getLocation(), target));

@@ -30,9 +30,10 @@ public class Splasher {
         myLoc = rc.getLocation();
         nearbyTiles = rc.senseNearbyMapInfos();
         nearbyRobots = rc.senseNearbyRobots();
-        for (MapInfo tile : nearbyTiles) {
-            if (allyPaintTower(rc, tile.getMapLocation())) {
-                closestPT = tile.getMapLocation();
+        for (RobotInfo tile : rc.senseNearbyRobots()) {
+            // Maintain the closest paint tower for refills
+            if (tile.team == rc.getTeam() && tile.type.paintPerTurn > 0) {
+                closestPT = tile.getLocation();
             }
         }
     }
@@ -60,7 +61,7 @@ public class Splasher {
         if (rc.isActionReady() && rc.getPaint() < 50) {
             for (RobotInfo robot : nearbyRobots) {
                 MapLocation loc = robot.getLocation();
-                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && GameUtils.hasAllyPaintTower(rc, loc) && robot.getPaintAmount() >= 50) {
+                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && robot.type.paintPerTurn > 0 && robot.getPaintAmount() >= 50) {
                     int delta = -1 * java.lang.Math.min(robot.paintAmount, 100 - rc.getPaint());
                     if (delta < 0) {
                         rc.transferPaint(loc, delta);
@@ -116,7 +117,7 @@ public class Splasher {
 
             // Try not to stand still if we're on enemy paint
             moveScore[8] = -1;
-            if (GameUtils.hasEnemyTile(rc, myLoc)) {
+            if (rc.senseMapInfo(myLoc).getPaint().isEnemy()) {
                 moveScore[8] -= 15;
             }
 
@@ -126,7 +127,7 @@ public class Splasher {
                 final double dist = myLoc.distanceSquaredTo(loc);
 
                 // Get close to enemy paint, but not onto it
-                if (GameUtils.isEnemyTile(tile)) {
+                if (tile.getPaint().isEnemy()) {
                     moveScore[dir] += dist <= 2 ? -25 : +1.5;
                 }
 
@@ -152,7 +153,7 @@ public class Splasher {
 
             // TODO: Add probabilistic choice to avoid collisions?
             int bestDir = -1;
-            for (int i = 0; i < 9; i++) {
+            for (int i = 9; --i >= 0;) {
                 if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                     bestDir = i;
                 }
