@@ -32,7 +32,6 @@ public class RobotPlayer {
                 myJob = Job.BASE;
             if (rc.getType() == UnitType.SOLDIER)
                 myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
-//                myJob = Job.PAWN;
             if (rc.getType() == UnitType.MOPPER)
                 myJob = Job.MOPPER;
             if (rc.getType() == UnitType.SPLASHER) {
