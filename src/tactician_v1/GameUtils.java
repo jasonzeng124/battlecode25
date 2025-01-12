@@ -15,17 +15,6 @@ public class GameUtils {
             Direction.CENTER
     };
 
-    // Player tile checks
-    public static boolean isMyColor(PaintType p) {
-        return p == PaintType.ALLY_PRIMARY || p == PaintType.ALLY_SECONDARY;
-    }
-    public static boolean isMyTile(MapInfo m) {
-        return isMyColor(m.getPaint());
-    }
-    public static boolean hasMyTile(RobotController rc, MapLocation l) throws GameActionException {
-        return isMyColor(rc.senseMapInfo(l).getPaint());
-    }
-
     // Enemy tile checks
     public static boolean isEnemyColor(PaintType p) {
         return p == PaintType.ENEMY_PRIMARY || p == PaintType.ENEMY_SECONDARY;
@@ -50,16 +39,14 @@ public class GameUtils {
     static Direction greedyPath(RobotController rc, MapLocation a, MapLocation b) {
         final int idx = a.directionTo(b).ordinal();
         int[] order = {
-                idx,
-                idx + 7, idx + 1,
-                idx + 6, idx + 2,
-                idx + 5, idx + 3,
-                idx + 4
+                idx + 4,
+                idx + 3, idx + 5,
+                idx + 2, idx + 6,
+                idx + 1, idx + 7,
+                idx
         };
-        for (int i = 0; i < 8; i++) {
-            if (order[i] >= 8) {
-                order[i] -= 8;
-            }
+        for (int i = 8; --i >= 0;) {
+            order[i] %= 8;
             if (rc.canMove(DIRS[order[i]])) {
                 return DIRS[order[i]];
             }

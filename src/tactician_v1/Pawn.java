@@ -54,10 +54,10 @@ public class Pawn {
         myLoc = rc.getLocation();
         nearbyTiles = rc.senseNearbyMapInfos();
 
-        for (MapInfo tile : nearbyTiles) {
+        for (RobotInfo tile : rc.senseNearbyRobots()) {
             // Maintain the closest paint tower for refills
-            if (GameUtils.hasAllyPaintTower(rc, tile.getMapLocation())) {
-                closestPT = tile.getMapLocation();
+            if (tile.team == rc.getTeam() && tile.type.paintPerTurn > 0) {
+                closestPT = tile.getLocation();
             }
         }
     }
@@ -90,15 +90,19 @@ public class Pawn {
                     final UnitType type = typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
 
                     // Fill in any spots in the pattern with the appropriate paint.
+                    boolean out = false;
                     for (int i = 5; --i >= 0;) {
                         for (int j = 5; --j >= 0;) {
-                            final MapLocation nearbyLoc = VMath.addVec(loc, new MapLocation(i - 2, j - 2));
+                            final MapLocation nearbyLoc = new MapLocation(loc.x + i - 2, loc.y + j - 2);
                             if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
                                 rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
-
                                 rc.setIndicatorDot(nearbyLoc, 255, 0, 0);
+                                out = true;
+                                break;
                             }
                         }
+                        if (out)
+                            break;
                     }
 
                     // Complete the ruin if we can.
@@ -122,8 +126,8 @@ public class Pawn {
         // Withdraw paint
         if (rc.isActionReady() && rc.getPaint() < 150) {
             for (RobotInfo robot : rc.senseNearbyRobots()) {
-                MapLocation loc = robot.getLocation();
-                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && GameUtils.hasAllyPaintTower(rc, loc) && robot.getPaintAmount() >= 75) {
+                final MapLocation loc = robot.getLocation();
+                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && robot.team == rc.getTeam() && robot.type.paintPerTurn > 0 && robot.getPaintAmount() >= 75) {
                     int delta = -1 * java.lang.Math.min(robot.paintAmount, 200 - rc.getPaint());
                     if (delta < 0) {
                         rc.transferPaint(loc, delta);
@@ -149,6 +153,7 @@ public class Pawn {
                 }
             }
 
+            MapLocation placed = null;
             for (MapInfo tile : nearbyTiles) {
                 final MapLocation loc = tile.getMapLocation();
                 if (myLoc.isWithinDistanceSquared(loc, 4)) {
@@ -157,20 +162,23 @@ public class Pawn {
                     if (qClearArr[loc.x][loc.y] < qClearTime && isPaintable(rc, loc) && tile.getPaint() != defaultPattern(loc)) {
                         rc.attack(loc, defaultPattern(loc) == PaintType.ALLY_SECONDARY);
                         rc.setIndicatorDot(loc, 0, 255, 0);
+                        placed = loc;
                         break;
                     }
                 }
+                if (placed != null)
+                    break;
             }
-        }
-
-        // Complete resource patterns
-        for (MapInfo tile : nearbyTiles) {
-            final MapLocation loc = tile.getMapLocation();
-            if (((3 * loc.x + loc.y) % 10) == 0) {
-                if (rc.canCompleteResourcePattern(loc)) {
-                    rc.completeResourcePattern(loc);
+            if (placed != null)
+                // Complete resource patterns
+                for (MapInfo tile : nearbyTiles) {
+                    final MapLocation loc = tile.getMapLocation();
+                    if (((3 * loc.x + loc.y) % 10) == 0 && Math.max(Math.abs(placed.x - loc.x), Math.abs(placed.y - loc.y)) <= 2) {
+                        if (rc.canCompleteResourcePattern(loc)) {
+                            rc.completeResourcePattern(loc);
+                        }
+                    }
                 }
-            }
         }
 
         if (rc.isMovementReady()) {
@@ -188,7 +196,7 @@ public class Pawn {
                 final double dist = myLoc.distanceSquaredTo(loc);
 
                 // Get close to enemy paint, but not onto it
-                if (GameUtils.isEnemyTile(tile)) {
+                if (tile.getPaint().isEnemy()) {
                     moveScore[dir] += dist <= 2 ? -20 : +0.5;
                 }
 
