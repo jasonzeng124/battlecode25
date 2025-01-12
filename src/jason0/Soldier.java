@@ -5,6 +5,7 @@ import battlecode.common.*;
 
 public class Soldier {
     public static RobotController rc;
+/* 
 
     public static boolean initialized = false;
     public static final Direction[] directions = {
@@ -28,15 +29,11 @@ public class Soldier {
     public static double [] randCosts;
     public static int randReset;
     public static double [] moveCosts;
-    public static HomeNav nav;
-    public static RobotInfo refuelStation;
-    public static Direction way;
     public static MapLocation ruinLoc;
 
     public static int offshore = 0;
 
     public static void init() throws GameActionException {
-        HomeNav.init();
         friendCnt = new int [9];
         notPainted = new int [9];
         randCosts = new double [9];
@@ -46,44 +43,36 @@ public class Soldier {
         initialized = true;
     }
 
-    public static boolean shouldPaint(MapLocation loc) throws GameActionException{
-        if(rc.canAttack(loc)) {
-            MapInfo mi = rc.senseMapInfo(loc);
-            if(mi.getPaint() == PaintType.EMPTY || (mi.getMark() != PaintType.EMPTY && mi.getPaint() != mi.getMark())){
-                if(mi.hasRuin()){
-                    return (rc.canSenseRobotAtLocation(loc) && !rc.senseRobotAtLocation(loc).getTeam().isPlayer());
-                }else{
-                    return true;
-                }
-            }
+    static boolean isPaintable(MapLocation loc) throws GameActionException {
+        if (!rc.canAttack(loc)) {
+            return false;
         }
-        return false;
+
+        final MapInfo mi = rc.senseMapInfo(loc);
+        return mi.getPaint() == PaintType.EMPTY ||
+            (mi.getPaint().isAlly() && mi.getMark() != PaintType.EMPTY && mi.getPaint() != mi.getMark());
     }
 
     public static void sense() throws GameActionException {
         nearbyTiles = rc.senseNearbyMapInfos();
         nearbyRobots = rc.senseNearbyRobots();
-        for(int i = 9; --i >= 0;){
+        for(int i = 9; --i >= 0;) {
             friendCnt[i] = 0;
             notPainted[i] = 0;
-            if(randReset == 0){
+            if(randReset == 0) {
                 randCosts[i] = FastRand.randfloat() * 20.0;
             }
         }
-        if(randReset == 0){
-            randReset = 8;
-        }
+        if(randReset == 0) randReset = 8;
         randReset--;
-        ruinLoc = null;
+
         for (MapInfo tile : nearbyTiles){
-            if(shouldPaint(tile.getMapLocation())) {
-                // rc.setIndicatorDot(tile.getMapLocation(), 255, 0, 255);
+            if(isPaintable(tile.getMapLocation())) {
                 MapLocation dif = FastMath.addVec(FastMath.minusVec(tile.getMapLocation(), rc.getLocation()), new MapLocation(4, 4));
                 notPainted[dif.x] ^= (1 << dif.y);
             }
-            if(tile.hasRuin() && !rc.canSenseRobotAtLocation(tile.getMapLocation())){
+            if(tile.hasRuin() && !rc.canSenseRobotAtLocation(tile.getMapLocation()))
                 ruinLoc = tile.getMapLocation();
-            }
         }
         refuelStation = null;
         for (RobotInfo robot : nearbyRobots){
@@ -106,6 +95,7 @@ public class Soldier {
             offshore += 3;
         else
             offshore = 0;
+        rc.setIndicatorString("Offshore " + offshore);
     }
 
     public static int countFriends(int x, int y){
@@ -148,11 +138,9 @@ public class Soldier {
                     moveCosts[i] += numfriends * 5;
                 }
             }
-            if(i == 8){
-                //unless you have a really good reason, don't sitting duck
-                moveCosts[i] += 20;
-            }
         }
+        //unless you have a really good reason, don't sitting duck
+        moveCosts[8] += 20;
     }
 
     public static void applyExploreCosts() throws GameActionException {
@@ -187,7 +175,7 @@ public class Soldier {
             }
           //  rc.setIndicatorString("E " + s);
         }
-        if(ruinLoc != null){
+        if(ruinLoc != null && rc.getChips() > 800){
             Direction dir = rc.getLocation().directionTo(ruinLoc);
             int a = dir.getDirectionOrderNum()-1;
             int a2 = a - 1;
@@ -244,12 +232,12 @@ public class Soldier {
                 way = directions[i];
             }
             if(rc.onTheMap(rc.getLocation().add(directions[i])))
-                rc.setIndicatorDot(rc.getLocation().add(directions[i]), (int)(moveCosts[i]), -(int)(moveCosts[i]), (int)(moveCosts[i]));
+                rc.setIndicatorDot(rc.getLocation().add(directions[i]), (int)(moveCosts[i]), (int)(moveCosts[i]), (int)(moveCosts[i]));
         }
     }
 
     public static boolean tryToPaint(MapLocation loc) throws GameActionException{
-        if(shouldPaint(loc)){
+        if(isPaintable(loc)){
             // rc.setIndicatorString(loc.x + " " + loc.y);
             rc.setIndicatorDot(loc, 255, 0, 0);
             PaintType p = rc.senseMapInfo(loc).getMark();
@@ -330,4 +318,5 @@ public class Soldier {
         think();
         act();
     }
+*/
 }

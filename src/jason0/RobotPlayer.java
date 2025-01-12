@@ -8,6 +8,10 @@ public class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
         FastRand.initRand(rc);
 
+        HomeNav.rc = rc;
+        HomeNav.init();
+        HomeNav.declareSource(rc.getLocation());
+
         Soldier.rc = rc;
         Mopper.rc = rc;
         Splasher.rc = rc;
@@ -15,12 +19,16 @@ public class RobotPlayer {
 
         while (true) {
             round = rc.getRoundNum();
+            if(round > 1000) rc.resign();
             try {
                 switch (rc.getType()){
-                    case SOLDIER: Soldier.run(); break; 
+                    // case SOLDIER: Soldier.run(); break; 
                     case MOPPER: Mopper.run(); break;
                     case SPLASHER: Splasher.run(); break; 
                     default: Tower.run(); break;
+                }
+                while(Clock.getBytecodeNum() <= 14000){
+                    HomeNav.wasteBytecode();
                 }
             }
             catch (GameActionException e) {

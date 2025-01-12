@@ -35,7 +35,8 @@ public class Tower {
     }
 
     public static void act() throws GameActionException {
-        if(rc.senseRobotAtLocation(rc.getLocation()).type.paintPerTurn > 0){
+        if(rc.senseRobotAtLocation(rc.getLocation()).type.paintPerTurn > 0
+            && (rc.getRoundNum() > 100 || rc.getChips() > 1000)){
             int offset = FastRand.rand256() & 7;
             for(int i = 8; --i >= 0;){
                 MapLocation nextLoc = rc.getLocation().add(directions[i^offset]);

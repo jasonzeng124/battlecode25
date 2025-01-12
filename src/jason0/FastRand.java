@@ -10,9 +10,11 @@ public class FastRand {
 
     // call FastMath.initRand(rc) before using FastMath.rand256()
     private static int randIndex = -1;
+    private static int starIndex = 0;
     public static final int MAX_RAND_CALLS = 10000; // don't call rand256 more than this many times per game
     public static void initRand(RobotController rc) {
         randIndex = Math.abs(rc.getRoundNum()*23981 + rc.getID()*10289) % lookupRand256Length;
+        starIndex = Math.abs(rc.getRoundNum()*23981 + rc.getID()*10289) % lookupRand256Length;
     }
 
     // faster version of (int)(256 * Math.random())
@@ -22,6 +24,11 @@ public class FastRand {
     public static int rand256() {
         randIndex = (randIndex + 1) % lookupRand256Length;
         return lookupRand256.charAt(randIndex);
+    }
+
+    public static int hash256 (int va) {
+        randIndex = (starIndex + va) % lookupRand256Length;
+        return lookupRand256.charAt(va);
     }
 
     public static float randfloat() {
