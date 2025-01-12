@@ -3,7 +3,6 @@ package tactician_v1;
 import battlecode.common.*;
 
 public class Splasher {
-
     private static final Direction[] DIRS = {
             Direction.NORTH,
             Direction.NORTHEAST,
@@ -16,10 +15,17 @@ public class Splasher {
             Direction.CENTER
     };
 
+    enum State {
+        WORKING,
+        GOING_HOME,
+        GOING_BACK
+    };
+
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
-    public static MapLocation myLoc, spawnLoc, closestPT;
+    public static MapLocation myLoc, spawnLoc, workLoc, closestPT;
     private static Direction prvDir = null;
+    private static State curState = State.WORKING;
 
     public static void updateNearby(RobotController rc) throws GameActionException {
         if (spawnLoc == null) {
@@ -68,7 +74,7 @@ public class Splasher {
             }
         }
 
-        // Try to mop something
+        // Try to splash something
         if (rc.isActionReady()) {
             MapLocation loc = null;
             int scr = 0;
@@ -95,56 +101,71 @@ public class Splasher {
             }
         }
 
-        if (rc.isMovementReady()) {
-            double[] moveScore = new double[9];
-            for (int i = 0; i < 9; i++) {
-                moveScore[i] = 0;
-            }
+        // Handle unit states, which determine movement
+        switch (curState) {
+            case WORKING:
+                workLoc = myLoc;
+                if (rc.isMovementReady()) {
+                    double[] moveScore = new double[9];
+                    for (int i = 0; i < 9; i++) {
+                        moveScore[i] = 0;
+                    }
 
-            // Try to move towards a paint tower if we're low
-            if (closestPT != null && rc.getPaint() < 100) {
-                moveScore[GameUtils.greedyPath(rc, myLoc, closestPT).ordinal()] += 50;
-            }
+                    for (MapInfo tile : nearbyTiles) {
+                        final MapLocation loc = tile.getMapLocation();
+                        final int dir = myLoc.directionTo(loc).ordinal();
+                        final double dist = myLoc.distanceSquaredTo(loc);
 
-            // Try not to stand still if we're on enemy paint
-            moveScore[8] = -1;
-            if (rc.senseMapInfo(myLoc).getPaint().isEnemy()) {
-                moveScore[8] -= 15;
-            }
+                        // Get close to enemy paint, but not onto it
+                        if (tile.getPaint().isEnemy()) {
+                            moveScore[dir] += dist <= 2 ? -20 : +1;
+                        }
 
-            for (MapInfo tile : nearbyTiles) {
-                final MapLocation loc = tile.getMapLocation();
-                final int dir = myLoc.directionTo(loc).ordinal();
-                final double dist = myLoc.distanceSquaredTo(loc);
+                        // Get close to empty paint
+                        if (tile.getPaint() == PaintType.EMPTY) {
+                            moveScore[dir] += dist <= 2 ? -10 : +2;
+                        }
+                    }
 
-                // Get close to enemy paint, but not onto it
-                if (tile.getPaint().isEnemy()) {
-                    moveScore[dir] += dist <= 2 ? -20 : +1;
+                    // Inertia
+                    if (prvDir != null) {
+                        moveScore[prvDir.ordinal()] += 5;
+                        moveScore[(prvDir.ordinal() + 1) % 8] += 2;
+                        moveScore[(prvDir.ordinal() + 7) % 8] += 2;
+                    }
+
+                    // TODO: Add probabilistic choice to avoid collisions?
+                    int bestDir = -1;
+                    for (int i = 9; --i >= 0; ) {
+                        if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
+                            bestDir = i;
+                        }
+                    }
+                    if (bestDir != -1) {
+                        rc.move(DIRS[bestDir]);
+                        prvDir = DIRS[bestDir];
+                    }
                 }
-
-                // Get close to empty paint
-                if (tile.getPaint() == PaintType.EMPTY) {
-                    moveScore[dir] += dist <= 2 ? -10 : +2;
+                if (closestPT != null && rc.getPaint() < 100) {
+                    curState = State.GOING_HOME;
                 }
-            }
-
-            if (prvDir != null) {
-                moveScore[prvDir.ordinal()] += 10;
-                moveScore[(prvDir.ordinal() + 1) % 8] += 8;
-                moveScore[(prvDir.ordinal() + 7) % 8] += 8;
-            }
-
-            // TODO: Add probabilistic choice to avoid collisions?
-            int bestDir = -1;
-            for (int i = 9; --i >= 0; ) {
-                if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
-                    bestDir = i;
+                break;
+            case GOING_HOME:
+                if (rc.isMovementReady()) {
+                    rc.move(GameUtils.greedyPath(rc, myLoc, closestPT));
                 }
-            }
-            if (bestDir != -1) {
-                rc.move(DIRS[bestDir]);
-                prvDir = DIRS[bestDir];
-            }
+                if (rc.getPaint() >= 200) {
+                    curState = State.GOING_BACK;
+                }
+                break;
+            case GOING_BACK:
+                if (rc.isMovementReady()) {
+                    rc.move(GameUtils.greedyPath(rc, myLoc, workLoc));
+                }
+                if (myLoc.isWithinDistanceSquared(workLoc, 4)) {
+                    curState = State.WORKING;
+                }
+                break;
         }
 
         assert rc.getRoundNum() == curRound : "Mopper: Bytecode limit exceeded";

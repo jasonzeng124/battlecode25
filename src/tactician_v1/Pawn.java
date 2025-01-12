@@ -97,7 +97,7 @@ public class Pawn {
                 // Unfinished ruin
                 if (!rc.canSenseRobotAtLocation(loc)) {
                     // Decide which type of tower to build
-                    final int typeId = (loc.x + loc.y) % 2;
+                    final int typeId = (loc.x + loc.y) % 4 == 0 ? 0 : 1;
                     final UnitType type = typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
 
                     // Fill in any spots in the pattern with the appropriate paint.
@@ -143,6 +143,16 @@ public class Pawn {
                     if (delta < 0) {
                         rc.transferPaint(loc, delta);
                     }
+                }
+            }
+        }
+
+        // Attack nearby enemy towers
+        if (rc.isActionReady() && rc.getPaint() >= 75) {
+            for (RobotInfo r : rc.senseNearbyRobots(myLoc, 9, rc.getTeam().opponent())) {
+                if (r.type.isTowerType()) {
+                    rc.attack(r.getLocation());
+                    break;
                 }
             }
         }
