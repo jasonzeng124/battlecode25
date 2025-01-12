@@ -17,28 +17,54 @@ public class Tower {
             Direction.NORTHWEST,
     };
 
+    static XorShiftRNG rng;
+    static MapLocation origin;
     static ArrayList<Integer> dispatched = new ArrayList<>();
-    static Random rand = new Random();
+
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
-        FastMath.initRand(rc);
+        // Initialize stuff
+        if (rng == null) {
+            rng = new XorShiftRNG(rc);
+        }
+        if (origin == null) {
+            if (rc.getRoundNum() == 1) {
+                origin = rc.getLocation();
+            } else {
+                for (Message msg : rc.readMessages(-1)) {
+                    final int data = msg.getBytes();
+                    origin = new MapLocation(data & 63, (data >> 6) & 63);
+                    break;
+                }
+            }
+        }
 
-        if (
-            rc.isActionReady() &&
-            (rc.getRoundNum() < 100 || (rc.getType().paintPerTurn > 0 && rc.getMoney() >= 1300 && rc.getPaint() >= 300))
-        ) {
+        final int curRound = rc.getRoundNum();
+
+        // Attack nearby enemies
+        rc.attack(null);
+        for (RobotInfo robot : rc.senseNearbyRobots()) {
+            final MapLocation loc = robot.getLocation();
+
+            if (robot.team != rc.getTeam() && rc.canAttack(loc)) {
+                rc.attack(loc);
+            }
+        }
+
+        // Spawn units
+        if (rc.isActionReady() && (curRound < 50 || (rc.getType().paintPerTurn > 0 && rc.getMoney() >= 1000))) {
             UnitType type = UnitType.SOLDIER;
 
-            if (rc.getRoundNum() >= rc.getMapWidth() * rc.getMapHeight() / 12) {
-                final double val = rand.nextDouble();
-                if (val < 0.3) {
+            if (curRound >= rc.getMapWidth() * rc.getMapHeight() / 12) {
+                final float r = rng.nextFloat();
+                if (r < 0.3) {
                     type = UnitType.MOPPER;
-                } else if (val < 0.6) {
+                } else if (r < 0.6) {
                     type = UnitType.SPLASHER;
                 }
             }
 
-            final int offset = FastMath.rand256() % 8;
+            final int offset = rng.nextInt(8);
             for (int i = 0; i < 8; i++) {
                 final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);
                 if (rc.canBuildRobot(type, loc)) {
@@ -47,12 +73,12 @@ public class Tower {
             }
         }
 
-        rc.attack(null);
-        for (RobotInfo robot : rc.senseNearbyRobots()) {
-            final MapLocation loc = robot.getLocation();
-
-            if (robot.team != rc.getTeam() && rc.canAttack(loc)) {
-                rc.attack(loc);
+        // Share the origin
+        if (origin != null) {
+            for (RobotInfo r : rc.senseNearbyRobots(rc.getLocation(), 9, rc.getTeam())) {
+                if (rc.canSendMessage(r.getLocation())) {
+                    rc.sendMessage(r.getLocation(), origin.x | (origin.y << 6));
+                }
             }
         }
     }
