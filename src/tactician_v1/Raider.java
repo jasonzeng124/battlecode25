@@ -16,27 +16,7 @@ public class Raider {
     };
 
     public static boolean init = false;
-    public static MapLocation target;
-
-    static Direction greedyPath(RobotController rc, MapLocation a, MapLocation b) {
-        final int idx = a.directionTo(b).ordinal();
-        int[] order = {
-                idx,
-                idx + 7, idx + 1,
-                idx + 6, idx + 2,
-                idx + 5, idx + 3,
-                idx + 4
-        };
-        for (int i = 0; i < 8; i++) {
-            if (order[i] >= 8) {
-                order[i] -= 8;
-            }
-            if (rc.canMove(DIRS[order[i]])) {
-                return DIRS[order[i]];
-            }
-        }
-        return null;
-    }
+    public static MapLocation spawn, target;
 
     static boolean onTarget(MapLocation loc) {
         return loc.isWithinDistanceSquared(target, 9);
@@ -45,15 +25,14 @@ public class Raider {
     public static void makeAction(RobotController rc) throws GameActionException {
         // Initialize estimated target location
         if (!init) {
-            MapLocation loc = rc.getLocation();
             for (RobotInfo r : rc.senseNearbyRobots()) {
-                if (r.team.isPlayer() && r.type.isTowerType() && rc.getLocation().isWithinDistanceSquared(loc, 2)) {
-                    loc = r.getLocation();
+                if (r.team.isPlayer() && r.type.isTowerType() && rc.getLocation().isWithinDistanceSquared(rc.getLocation(), 2)) {
+                    spawn = r.getLocation();
                     break;
                 }
             }
             final int width = rc.getMapWidth(), height = rc.getMapHeight();
-            final int x = loc.x, y = loc.y;
+            final int x = spawn.x, y = spawn.y;
             int targetX = x, targetY = y;
             if (Math.abs(x - width / 2) > width / 6)
                 targetX = width - x - 1;
@@ -102,7 +81,7 @@ public class Raider {
                 rc.move(bestMove);
             } else {
                 // Make a beeline for the target
-                rc.move(greedyPath(rc, rc.getLocation(), target));
+                rc.move(GameUtils.greedyPath(rc, rc.getLocation(), target));
             }
         }
 
@@ -120,7 +99,7 @@ public class Raider {
                 }
             }
 
-            // The target is dead
+            // At the enemy, the target is dead
             if (!attacked) {
                 RobotPlayer.myJob = RobotPlayer.Job.PAWN;
             }

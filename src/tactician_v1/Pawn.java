@@ -2,9 +2,6 @@ package tactician_v1;
 
 import battlecode.common.*;
 
-import java.util.ArrayList;
-import java.util.Random;
-
 public class Pawn {
     public static final Direction[] DIRS = {
             Direction.NORTH,
@@ -18,11 +15,40 @@ public class Pawn {
             Direction.CENTER
     };
 
-    public static MapInfo[] nearbyTiles;
+    public static final Direction[] CARDINAL = {
+            Direction.NORTH,
+            Direction.EAST,
+            Direction.SOUTH,
+            Direction.WEST,
+            Direction.CENTER
+    };
 
+    public static final byte PTRNS[][][] = {
+            // Paint tower
+            {
+                    {1, 0, 0, 0, 1},
+                    {0, 1, 0, 1, 0},
+                    {0, 0, 0, 0, 0},
+                    {0, 1, 0, 1, 0},
+                    {1, 0, 0, 0, 1}
+            },
+            // Coin tower
+            {
+                    {0, 1, 1, 1, 0},
+                    {1, 1, 0, 1, 1},
+                    {1, 0, 0, 0, 1},
+                    {1, 1, 0, 1, 1},
+                    {0, 1, 1, 1, 0}
+            }
+    };
+
+    public static MapInfo[] nearbyTiles;
     public static MapLocation myLoc, closestPT;
 
     public static int prevDir;
+
+    public static int[][] qClearArr = new int[60][60];
+    static int qClearTime = 0;
 
     public static void updateNearby(RobotController rc) throws GameActionException {
         myLoc = rc.getLocation();
@@ -37,12 +63,11 @@ public class Pawn {
     }
 
     static boolean isPaintable(RobotController rc, MapLocation loc) throws GameActionException {
-        if (!rc.canAttack(loc)) {
-            return false;
-        }
+        return rc.canSenseLocation(loc) && rc.canAttack(loc) && !rc.senseMapInfo(loc).hasRuin();
+    }
 
-        final MapInfo mi = rc.senseMapInfo(loc);
-        return mi.getPaint() == PaintType.EMPTY || (mi.getPaint().isAlly() && mi.getMark() != PaintType.EMPTY && mi.getPaint() != mi.getMark());
+    public static PaintType defaultPattern(MapLocation loc) {
+        return ((loc.x + loc.y) % 2 == 0) && (((3 * loc.x + loc.y) % 10) != 0) ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY;
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
@@ -54,66 +79,44 @@ public class Pawn {
         }
 
         for (MapInfo tile : nearbyTiles) {
+            // Ruins are our top priority
             if (tile.hasRuin()) {
-                final MapLocation targetLoc = tile.getMapLocation();
-                final Direction dir = GameUtils.greedyPath(rc, myLoc, targetLoc);
+                final MapLocation loc = tile.getMapLocation();
 
                 // Unfinished ruin
-                if (!rc.canSenseRobotAtLocation(tile.getMapLocation())) {
+                if (!rc.canSenseRobotAtLocation(loc)) {
                     // Decide which type of tower to build
-                    UnitType type = (targetLoc.x + targetLoc.y) % 2 == 0 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
-
-                    // Mark the pattern we need to draw to build a tower here if we haven't already.
-                    MapLocation markLoc = tile.getMapLocation().subtract(dir);
-                    if (rc.senseMapInfo(markLoc).getMark() == PaintType.EMPTY && rc.canMarkTowerPattern(type, targetLoc)) {
-                        rc.markTowerPattern(type, targetLoc);
-                        System.out.println("Trying to build a tower at " + targetLoc);
-                    }
+                    final int typeId = (loc.x + loc.y) % 2;
+                    final UnitType type = typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
 
                     // Fill in any spots in the pattern with the appropriate paint.
-                    for (MapInfo patternTile : rc.senseNearbyMapInfos(targetLoc, 8)) {
-                        if (patternTile.getMark() != patternTile.getPaint() && patternTile.getMark() != PaintType.EMPTY) {
-                            boolean useSecondaryColor = patternTile.getMark() == PaintType.ALLY_SECONDARY;
-                            if (rc.canAttack(patternTile.getMapLocation())) {
-                                rc.attack(patternTile.getMapLocation(), useSecondaryColor);
+                    for (int i = 0; i < 5; i++) {
+                        for (int j = 0; j < 5; j++) {
+                            final MapLocation nearbyLoc = VMath.addVec(loc, new MapLocation(i - 2, j - 2));
+                            if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
+                                rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
+
+                                rc.setIndicatorDot(nearbyLoc, 255, 0, 0);
                             }
                         }
                     }
 
                     // Complete the ruin if we can.
-                    if (rc.canCompleteTowerPattern(type, targetLoc)) {
-                        rc.completeTowerPattern(type, targetLoc);
+                    if (rc.canCompleteTowerPattern(type, loc)) {
+                        rc.completeTowerPattern(type, loc);
                         rc.setTimelineMarker("Tower built", 0, 255, 0);
-                        System.out.println("Built a tower at " + targetLoc + "!");
+                        System.out.println("Built a tower at " + loc + "!");
                     }
 
                     // Move closer
-                    moveScore[dir.ordinal()] += 15;
+                    moveScore[GameUtils.greedyPath(rc, myLoc, loc).ordinal()] += 15;
                 } else {
                     // Finished ruin, make improvements while passing by
-                    if (rc.canUpgradeTower(targetLoc)) {
-                        rc.upgradeTower(targetLoc);
+                    if (rc.canUpgradeTower(loc)) {
+                        rc.upgradeTower(loc);
                     }
                 }
             }
-        }
-
-        // Mark resource patterns on clear areas
-        boolean areaClear = true;
-        for (int dx = -2; dx <= +2; dx++) {
-            for (int dy = -2; dy <= +2; dy++) {
-                final MapLocation loc = VMath.addVec(myLoc, new MapLocation(dx, dy));
-                if (!(rc.canSenseLocation(loc) && rc.sensePassability(loc) && rc.senseMapInfo(loc).getMark() == PaintType.EMPTY)) {
-                    areaClear = false;
-                    break;
-                }
-            }
-        }
-        if (areaClear && rc.canMarkResourcePattern(myLoc)) {
-            rc.markResourcePattern(myLoc);
-        }
-        if (rc.canCompleteResourcePattern(myLoc)) {
-            rc.completeResourcePattern(myLoc);
         }
 
         // Withdraw paint
@@ -129,15 +132,43 @@ public class Pawn {
             }
         }
 
-        // Try to paint, prioritizing our current tile first and everything else randomly
+        // Paint nearby tiles with default color
         if (rc.isActionReady() && rc.getPaint() >= 75) {
-            if (isPaintable(rc, myLoc)) {
-                rc.attack(myLoc, rc.senseMapInfo(myLoc).getMark() == PaintType.ALLY_SECONDARY);
+            // Use a quick-clearing array to set banned tiles, from unfinished ruins
+            qClearTime++;
+            for (MapLocation loc : rc.senseNearbyRuins(-1)) {
+                if (!rc.canSenseRobotAtLocation(loc)) {
+                    for (int i = 0; i < 5; i++) {
+                        for (int j = 0; j < 5; j++) {
+                            int x = loc.x + i - 2, y = loc.y + j - 2;
+                            if (x >= 0 && x < 60 && y >= 0 && y < 60) {
+                                qClearArr[x][y] = qClearTime;
+                            }
+                        }
+                    }
+                }
             }
-            for (MapInfo tile : nearbyTiles) {
-                MapLocation target = tile.getMapLocation();
-                if (isPaintable(rc, target)) {
-                    rc.attack(target, tile.getMark() == PaintType.ALLY_SECONDARY);
+
+            for (MapInfo tile : rc.senseNearbyMapInfos()) {
+                final MapLocation loc = tile.getMapLocation();
+                if (myLoc.isWithinDistanceSquared(loc, 4)) {
+                    rc.setIndicatorDot(loc, 0, 0, 255);
+
+                    if (qClearArr[loc.x][loc.y] < qClearTime && isPaintable(rc, loc) && tile.getPaint() != defaultPattern(loc)) {
+                        rc.attack(loc, defaultPattern(loc) == PaintType.ALLY_SECONDARY);
+                        rc.setIndicatorDot(loc, 0, 255, 0);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Complete resource patterns
+        for (MapInfo tile : rc.senseNearbyMapInfos()) {
+            final MapLocation loc = tile.getMapLocation();
+            if (((3 * loc.x + loc.y) % 10) == 0) {
+                if (rc.canCompleteResourcePattern(loc)) {
+                    rc.completeResourcePattern(loc);
                 }
             }
         }
