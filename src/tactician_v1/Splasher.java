@@ -16,8 +16,6 @@ public class Splasher {
             Direction.CENTER
     };
 
-    static final int HOME_THRES = 20;
-
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
     public static MapLocation myLoc, spawnLoc, closestPT;
@@ -39,18 +37,18 @@ public class Splasher {
     }
 
     public static boolean allyPaintTower(
-        RobotController rc, MapLocation loc
+            RobotController rc, MapLocation loc
     ) throws GameActionException {
         if (
-            !rc.canSenseRobotAtLocation(loc) ||
-            rc.senseRobotAtLocation(loc).getTeam() != rc.getTeam()
+                !rc.canSenseRobotAtLocation(loc) ||
+                        rc.senseRobotAtLocation(loc).getTeam() != rc.getTeam()
         ) {
             return false;
         }
         final UnitType tp = rc.senseRobotAtLocation(loc).type;
         return (
-            tp == UnitType.LEVEL_ONE_PAINT_TOWER || tp == UnitType.LEVEL_TWO_PAINT_TOWER ||
-            tp == UnitType.LEVEL_THREE_PAINT_TOWER
+                tp == UnitType.LEVEL_ONE_PAINT_TOWER || tp == UnitType.LEVEL_TWO_PAINT_TOWER ||
+                        tp == UnitType.LEVEL_THREE_PAINT_TOWER
         );
     }
 
@@ -58,11 +56,11 @@ public class Splasher {
         final int curRound = rc.getRoundNum();
 
         // Withdraw paint
-        if (rc.isActionReady() && rc.getPaint() < 50) {
+        if (rc.isActionReady() && rc.getPaint() < 100) {
             for (RobotInfo robot : nearbyRobots) {
                 MapLocation loc = robot.getLocation();
-                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && robot.type.paintPerTurn > 0 && robot.getPaintAmount() >= 50) {
-                    int delta = -1 * java.lang.Math.min(robot.paintAmount, 100 - rc.getPaint());
+                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && robot.type.paintPerTurn > 0 && robot.getPaintAmount() >= 150) {
+                    int delta = -1 * java.lang.Math.min(robot.paintAmount, 300 - rc.getPaint());
                     if (delta < 0) {
                         rc.transferPaint(loc, delta);
                     }
@@ -79,27 +77,20 @@ public class Splasher {
                 if (!rc.canAttack(tgt)) {
                     continue;
                 }
-                int cnt = 0;
                 int curScr = 0;
                 for (MapInfo curTile : rc.senseNearbyMapInfos(tgt, 4)) {
-                    final PaintType tp = curTile.getPaint();
-                    if (tp == PaintType.ALLY_PRIMARY || tp == PaintType.ALLY_SECONDARY) {
-                        curScr -= 15;
-                        ++cnt;
-                    } else if (tp == PaintType.EMPTY) {
-                        curScr += 5;
-                    } else {
-                        curScr += 10;
+                    switch (curTile.getPaint()) {
+                        case ALLY_PRIMARY, ALLY_SECONDARY -> curScr -= 5;
+                        case EMPTY -> curScr += 2;
+                        case ENEMY_PRIMARY, ENEMY_SECONDARY -> curScr += 3;
                     }
                 }
-                if (cnt < 4) {
-                    if (curScr > scr) {
-                        loc = tgt;
-                        scr = curScr;
-                    }
+                if (curScr > scr) {
+                    loc = tgt;
+                    scr = curScr;
                 }
             }
-            if (loc != null) {
+            if (loc != null && scr >= 10) {
                 rc.attack(loc);
             }
         }
@@ -111,8 +102,8 @@ public class Splasher {
             }
 
             // Try to move towards a paint tower if we're low
-            if (closestPT != null && rc.getPaint() < HOME_THRES) {
-                moveScore[GameUtils.greedyPath(rc, myLoc, closestPT).ordinal()] += 10;
+            if (closestPT != null && rc.getPaint() < 100) {
+                moveScore[GameUtils.greedyPath(rc, myLoc, closestPT).ordinal()] += 50;
             }
 
             // Try not to stand still if we're on enemy paint
@@ -128,22 +119,14 @@ public class Splasher {
 
                 // Get close to enemy paint, but not onto it
                 if (tile.getPaint().isEnemy()) {
-                    moveScore[dir] += dist <= 2 ? -25 : +1.5;
+                    moveScore[dir] += dist <= 2 ? -20 : +1;
                 }
 
-                if (rc.canSenseRobotAtLocation(loc)) {
-                    final RobotInfo r = rc.senseRobotAtLocation(loc);
-                    if (r.getTeam() == rc.getTeam()) {
-                        switch (r.getType()) {
-                            case UnitType.SOLDIER -> moveScore[dir] += 0.5;
-                            case UnitType.MOPPER -> moveScore[dir] -= 1;
-                            default -> moveScore[dir] += 0;
-                        }
-                    }
+                // Get close to empty paint
+                if (tile.getPaint() == PaintType.EMPTY) {
+                    moveScore[dir] += dist <= 2 ? -10 : +2;
                 }
             }
-
-            moveScore[FastMath.rand256() % 9] += 12;
 
             if (prvDir != null) {
                 moveScore[prvDir.ordinal()] += 10;
@@ -153,7 +136,7 @@ public class Splasher {
 
             // TODO: Add probabilistic choice to avoid collisions?
             int bestDir = -1;
-            for (int i = 9; --i >= 0;) {
+            for (int i = 9; --i >= 0; ) {
                 if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                     bestDir = i;
                 }
@@ -169,11 +152,7 @@ public class Splasher {
     }
 
     public static void run(RobotController rc) throws GameActionException {
-
         updateNearby(rc);
-
         makeAction(rc);
-
     }
-
 }
