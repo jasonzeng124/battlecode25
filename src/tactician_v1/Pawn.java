@@ -74,7 +74,7 @@ public class Pawn {
         final int curRound = rc.getRoundNum();
 
         double[] moveScore = new double[9];
-        for (int i = 0; i < 9; i++) {
+        for (int i = 9; --i >= 0;) {
             moveScore[i] = 0;
         }
 
@@ -90,8 +90,8 @@ public class Pawn {
                     final UnitType type = typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
 
                     // Fill in any spots in the pattern with the appropriate paint.
-                    for (int i = 0; i < 5; i++) {
-                        for (int j = 0; j < 5; j++) {
+                    for (int i = 5; --i >= 0;) {
+                        for (int j = 5; --j >= 0;) {
                             final MapLocation nearbyLoc = VMath.addVec(loc, new MapLocation(i - 2, j - 2));
                             if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
                                 rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
@@ -138,8 +138,8 @@ public class Pawn {
             qClearTime++;
             for (MapLocation loc : rc.senseNearbyRuins(-1)) {
                 if (!rc.canSenseRobotAtLocation(loc)) {
-                    for (int i = 0; i < 5; i++) {
-                        for (int j = 0; j < 5; j++) {
+                    for (int i = 5; --i >= 0;) {
+                        for (int j = 5; --j >= 0;) {
                             int x = loc.x + i - 2, y = loc.y + j - 2;
                             if (x >= 0 && x < 60 && y >= 0 && y < 60) {
                                 qClearArr[x][y] = qClearTime;
@@ -149,7 +149,7 @@ public class Pawn {
                 }
             }
 
-            for (MapInfo tile : rc.senseNearbyMapInfos()) {
+            for (MapInfo tile : nearbyTiles) {
                 final MapLocation loc = tile.getMapLocation();
                 if (myLoc.isWithinDistanceSquared(loc, 4)) {
                     rc.setIndicatorDot(loc, 0, 0, 255);
@@ -164,7 +164,7 @@ public class Pawn {
         }
 
         // Complete resource patterns
-        for (MapInfo tile : rc.senseNearbyMapInfos()) {
+        for (MapInfo tile : nearbyTiles) {
             final MapLocation loc = tile.getMapLocation();
             if (((3 * loc.x + loc.y) % 10) == 0) {
                 if (rc.canCompleteResourcePattern(loc)) {
@@ -210,7 +210,7 @@ public class Pawn {
 
             // TODO: Add probabilistic choice to avoid collisions?
             int bestDir = -1;
-            for (int i = 0; i < 9; i++) {
+            for (int i = 9; --i >= 0;) {
                 if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                     bestDir = i;
                 }

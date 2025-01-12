@@ -59,7 +59,7 @@ public class Raider {
             if (onTarget(rc.getLocation())) {
                 int bestScore = -100;
                 Direction bestMove = null; // Should never stay null
-                for (int i = 0; i < 9; i++) {
+                for (int i = 9; --i >= 0;) {
                     final MapLocation loc = rc.getLocation().add(DIRS[i]);
                     if (rc.canMove(DIRS[i]) && onTarget(loc)) {
                         int score = 0;
