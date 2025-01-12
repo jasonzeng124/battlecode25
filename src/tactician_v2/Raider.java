@@ -84,7 +84,7 @@ public class Raider {
                         towerPtr = (towerPtr + 1)%4;
                     }
                     if(r.getType() == UnitType.MOPPER){
-                        mopperBuf[towerPtr] = r.getLocation();
+                        mopperBuf[mopperPtr] = r.getLocation();
                         mopperPtr = (mopperPtr + 1)%4;
                     }
                 }
@@ -105,10 +105,12 @@ public class Raider {
                             }
                         }
                         for (int j = 4; --j >= 0; ) {
-                            if(mopperBuf[j] != null && mopperBuf[j].distanceSquaredTo(loc) <= 2){
-                                score -= 3;
-                            }else{
-                                score -= 1;
+                            if(mopperBuf[j] != null){
+                                if(mopperBuf[j].distanceSquaredTo(loc) <= 2){
+                                    score -= 3;
+                                }else if(mopperBuf[j].distanceSquaredTo(loc) <= 8){
+                                    score -= 1;
+                                }
                             }
                         }
                         if (score > bestScore) {
