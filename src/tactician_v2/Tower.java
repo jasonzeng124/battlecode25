@@ -1,4 +1,4 @@
-package tactician_v1;
+package tactician_v2;
 
 import battlecode.common.*;
 
@@ -31,9 +31,9 @@ public class Tower {
 
             if (rc.getRoundNum() >= rc.getMapWidth() * rc.getMapHeight() / 12) {
                 final double val = rand.nextDouble();
-                if (val < 0.15) {
+                if (val < 0.3) {
                     type = UnitType.MOPPER;
-                } else if (val < 0.5) {
+                } else if (val < 0.6) {
                     type = UnitType.SPLASHER;
                 }
             }
