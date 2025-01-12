@@ -182,7 +182,7 @@ public class Pawn {
             }
             if (placed != null) {
                 // Complete resource patterns
-                for (MapInfo tile : rc.senseNearbyMapInfos(placed, 4)) {
+                for (MapInfo tile : rc.senseNearbyMapInfos(placed, 8)) {
                     final MapLocation loc = tile.getMapLocation();
                     if (((3 * loc.x + loc.y) % 10) == 0) {
                         if (rc.canCompleteResourcePattern(loc)) {
