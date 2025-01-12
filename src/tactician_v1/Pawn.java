@@ -83,6 +83,17 @@ public class Pawn {
             if (rc.getNumberTowers() < 25 && tile.hasRuin()) {
                 final MapLocation loc = tile.getMapLocation();
 
+                // Skip if there are already many workers there
+                int cnt = 0;
+                for (RobotInfo r : rc.senseNearbyRobots(loc, 4, rc.getTeam())) {
+                    if (r.type == UnitType.SOLDIER) {
+                        cnt++;
+                    }
+                }
+                if (cnt >= 2) {
+                    continue;
+                }
+
                 // Unfinished ruin
                 if (!rc.canSenseRobotAtLocation(loc)) {
                     // Decide which type of tower to build
@@ -90,23 +101,23 @@ public class Pawn {
                     final UnitType type = typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
 
                     // Fill in any spots in the pattern with the appropriate paint.
-                    boolean out = false;
+                    boolean filled = false;
                     for (int i = 5; --i >= 0;) {
                         for (int j = 5; --j >= 0;) {
                             final MapLocation nearbyLoc = new MapLocation(loc.x + i - 2, loc.y + j - 2);
                             if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
                                 rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
                                 rc.setIndicatorDot(nearbyLoc, 255, 0, 0);
-                                out = true;
+                                filled = true;
                                 break;
                             }
                         }
-                        if (out)
+                        if (filled)
                             break;
                     }
 
                     // Complete the ruin if we can.
-                    if (rc.canCompleteTowerPattern(type, loc)) {
+                    if (filled && rc.canCompleteTowerPattern(type, loc)) {
                         rc.completeTowerPattern(type, loc);
                         rc.setTimelineMarker("Tower built", 0, 255, 0);
                         System.out.println("Built a tower at " + loc + "!");
@@ -169,16 +180,17 @@ public class Pawn {
                 if (placed != null)
                     break;
             }
-            if (placed != null)
+            if (placed != null) {
                 // Complete resource patterns
-                for (MapInfo tile : nearbyTiles) {
+                for (MapInfo tile : rc.senseNearbyMapInfos(placed, 8)) {
                     final MapLocation loc = tile.getMapLocation();
-                    if (((3 * loc.x + loc.y) % 10) == 0 && Math.max(Math.abs(placed.x - loc.x), Math.abs(placed.y - loc.y)) <= 2) {
+                    if (((3 * loc.x + loc.y) % 10) == 0) {
                         if (rc.canCompleteResourcePattern(loc)) {
                             rc.completeResourcePattern(loc);
                         }
                     }
                 }
+            }
         }
 
         if (rc.isMovementReady()) {

@@ -29,16 +29,12 @@ public class Tower {
         ) {
             UnitType type = UnitType.SOLDIER;
 
-            if (rc.getRoundNum() >= 250 && rand.nextDouble() < 0.3)
-                type = UnitType.MOPPER;
-
-            if (rc.getRoundNum() >= 500) {
+            if (rc.getRoundNum() >= 300) {
                 final double val = rand.nextDouble();
-                if (val < 0.3) {
+                if (val < 0.3)
                     type = UnitType.MOPPER;
-                } else if (val < 0.6) {
+                else if (val < 0.6)
                     type = UnitType.SPLASHER;
-                }
             }
 
             final int offset = FastMath.rand256() % 8;
