@@ -251,11 +251,11 @@ public class Soldier {
             allowedDirs[0] = directions[randDir];
         }else if(priority == 1){
             //as long as the goal doesn't leave vision range, it is allowed
-            for(int i = 9; --i >= 0;){
-                if(rc.canMove(directions[i])){
+            for (int i = 9; --i >= 0; ) {
+                if (rc.canMove(directions[i])) {
                     MapLocation ml = rc.getLocation().add(directions[i]);
-                    if(ml.distanceSquaredTo(goal) <= 20){
-                        if(rc.senseMapInfo(ml).getPaint().isAlly()){
+                    if (ml.distanceSquaredTo(goal) <= 20) {
+                        if (rc.senseMapInfo(ml).getPaint().isAlly()) {
                             allowedDirs[numDirs] = directions[i];
                             numDirs++;
                         }

@@ -63,7 +63,11 @@ public class Pawn {
     }
 
     static boolean isPaintable(RobotController rc, MapLocation loc) throws GameActionException {
-        return rc.canSenseLocation(loc) && rc.canAttack(loc) && !rc.senseMapInfo(loc).hasRuin();
+        if (!rc.canSenseLocation(loc)) {
+            return false;
+        }
+        final MapInfo tile = rc.senseMapInfo(loc);
+        return rc.canAttack(loc) && !tile.hasRuin() && !tile.getPaint().isEnemy();
     }
 
     public static PaintType defaultPattern(MapLocation loc) {
@@ -127,7 +131,7 @@ public class Pawn {
                     moveScore[GameUtils.greedyPath(rc, myLoc, loc).ordinal()] += 15;
                 } else {
                     // Finished ruin, make improvements while passing by
-                    if (rc.canUpgradeTower(loc)) {
+                    if (rc.canUpgradeTower(loc) && rc.getNumberTowers() >= 5 && rc.getChips() >= 1300) {
                         rc.upgradeTower(loc);
                     }
                 }
