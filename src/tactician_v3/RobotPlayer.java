@@ -1,12 +1,6 @@
-package tactician_v2;
+package tactician_v3;
 
 import battlecode.common.*;
-import tactician_v3.FastMath;
-import tactician_v3.Mopper;
-import tactician_v3.Pawn;
-import tactician_v3.Raider;
-import tactician_v3.Splasher;
-import tactician_v3.Tower;
 
 public class RobotPlayer {
     static boolean init = false;
