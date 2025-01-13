@@ -28,8 +28,8 @@ public class Raider {
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
-        
-        RobotInfo [] ris = rc.senseNearbyRobots();
+
+        RobotInfo[] ris = rc.senseNearbyRobots();
         // Initialize estimated target location
         if (!init) {
             for (RobotInfo r : ris) {
@@ -59,11 +59,11 @@ public class Raider {
             }
         }
 
-        if(rc.canSenseLocation(target) && !rc.canSenseRobotAtLocation(target)){
+        if (rc.canSenseLocation(target) && !rc.canSenseRobotAtLocation(target)) {
             RobotPlayer.myJob = RobotPlayer.Job.PAWN;
         }
 
-        if(rc.canAttack(target)){
+        if (rc.canAttack(target)) {
             rc.attack(target);
         }
 
@@ -73,15 +73,15 @@ public class Raider {
         if (rc.isMovementReady()) {
             // Combat micro, conserve a bit of paint while constantly attacking
             if (closeTarget(rc.getLocation())) {
-                RobotInfo [] ri = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-                MapLocation [] towerBuf = new MapLocation [4];//towers that want to attack us
-                MapLocation [] mopperBuf = new MapLocation [4];//moppers that want to attack us
+                RobotInfo[] ri = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+                MapLocation[] towerBuf = new MapLocation[4];//towers that want to attack us
+                MapLocation[] mopperBuf = new MapLocation[4];//moppers that want to attack us
                 int towerPtr = 0;
                 int mopperPtr = 0;
-                for (RobotInfo r: ri) {
-                    if(r.getType().isTowerType()){
+                for (RobotInfo r : ri) {
+                    if (r.getType().isTowerType()) {
                         towerBuf[towerPtr] = r.getLocation();
-                        towerPtr = (towerPtr + 1)%4;
+                        towerPtr = (towerPtr + 1) % 4;
                     }
                     if(r.getType() == UnitType.MOPPER){
                         mopperBuf[mopperPtr] = r.getLocation();
@@ -90,8 +90,8 @@ public class Raider {
                 }
 
                 int bestScore = -100;
-                Direction bestMove = Direction.CENTER; 
-                for (int i = 9; --i >= 0;) {
+                Direction bestMove = Direction.CENTER;
+                for (int i = 9; --i >= 0; ) {
                     final MapLocation loc = rc.getLocation().add(DIRS[i]);
                     if (rc.canMove(DIRS[i]) && (onTarget(rc.getLocation()) || onTarget(loc))) {
                         int score = 0;
@@ -100,7 +100,7 @@ public class Raider {
                         if (rc.senseMapInfo(loc).getPaint().isAlly())
                             score += 1;
                         for (int j = 4; --j >= 0; ) {
-                            if(towerBuf[j] != null && towerBuf[j].distanceSquaredTo(loc) <= 9){
+                            if (towerBuf[j] != null && towerBuf[j].distanceSquaredTo(loc) <= 9) {
                                 score -= 25;
                             }
                         }
@@ -120,7 +120,7 @@ public class Raider {
                     }
                 }
                 if(rc.getRoundNum()%2 != 0 || synctrigger){
-                    if(rc.canMove(bestMove)){
+                    if(rc.canMove(bestMove) && bestMove != Direction.CENTER){
                         rc.move(bestMove);
                     }
                 }
@@ -131,8 +131,8 @@ public class Raider {
             }
         }
 
-        
-        if(rc.canAttack(target)){
+
+        if (rc.canAttack(target)) {
             rc.attack(target);
         }
 

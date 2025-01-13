@@ -17,6 +17,7 @@ public class Tower {
             Direction.NORTHWEST,
     };
 
+    static MapLocation origin;
     static ArrayList<Integer> dispatched = new ArrayList<>();
     static Random rand = new Random();
     static UnitType next = UnitType.SOLDIER;
@@ -61,6 +62,18 @@ public class Tower {
 
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
+        // Initialize stuff
+        if (origin == null) {
+            if (rc.getRoundNum() == 1) {
+                origin = rc.getLocation();
+            } else {
+                for (Message msg : rc.readMessages(-1)) {
+                    final int data = msg.getBytes();
+                    origin = new MapLocation(data & 63, (data >> 6) & 63);
+                    break;
+                }
+            }
+        }
         countChips(rc);
         rc.attack(null);
         boolean hit = false;
@@ -104,5 +117,14 @@ public class Tower {
         }
 
         
+
+        // Share the origin
+        if (origin != null) {
+            for (RobotInfo r : rc.senseNearbyRobots(rc.getLocation(), 9, rc.getTeam())) {
+                if (rc.canSendMessage(r.getLocation())) {
+                    rc.sendMessage(r.getLocation(), origin.x | (origin.y << 6));
+                }
+            }
+        }
     }
 }

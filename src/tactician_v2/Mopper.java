@@ -124,17 +124,15 @@ public class Mopper {
                 }
             }
 
-            moveScore[FastMath.rand256() % 9] += 12;
-
             if (prvDir != null) {
-                moveScore[prvDir.ordinal()] += 10;
-                moveScore[(prvDir.ordinal() + 1) % 8] += 8;
-                moveScore[(prvDir.ordinal() + 7) % 8] += 8;
+                moveScore[prvDir.ordinal()] += 5;
+                moveScore[(prvDir.ordinal() + 1) % 8] += 2;
+                moveScore[(prvDir.ordinal() + 7) % 8] += 2;
             }
 
             // TODO: Add probabilistic choice to avoid collisions?
             int bestDir = -1;
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < 8; i++) {
                 if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                     bestDir = i;
                 }

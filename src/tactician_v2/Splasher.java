@@ -3,31 +3,28 @@ package tactician_v2;
 import battlecode.common.*;
 
 public class Splasher {
-    private static final Direction[] DIRS = {
-            Direction.NORTH,
-            Direction.NORTHEAST,
-            Direction.EAST,
-            Direction.SOUTHEAST,
-            Direction.SOUTH,
-            Direction.SOUTHWEST,
-            Direction.WEST,
-            Direction.NORTHWEST,
-            Direction.CENTER
-    };
+    private static final Direction[] DIRS = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST, Direction.CENTER};
 
     enum State {
-        WORKING,
-        GOING_HOME,
-        GOING_BACK
-    };
+        WORKING, GOING_HOME, GOING_BACK
+    }
+
+    ;
 
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
-    public static MapLocation myLoc, spawnLoc, workLoc, closestPT;
+    public static MapLocation origin, myLoc, spawnLoc, workLoc, closestPT;
     private static Direction prvDir = null;
     private static State curState = State.WORKING;
 
     public static void updateNearby(RobotController rc) throws GameActionException {
+        if (origin == null) {
+            for (Message msg : rc.readMessages(-1)) {
+                final int data = msg.getBytes();
+                origin = new MapLocation(data & 63, (data >> 6) & 63);
+                break;
+            }
+        }
         if (spawnLoc == null) {
             spawnLoc = rc.getLocation();
         }
@@ -42,20 +39,12 @@ public class Splasher {
         }
     }
 
-    public static boolean allyPaintTower(
-            RobotController rc, MapLocation loc
-    ) throws GameActionException {
-        if (
-                !rc.canSenseRobotAtLocation(loc) ||
-                        rc.senseRobotAtLocation(loc).getTeam() != rc.getTeam()
-        ) {
+    public static boolean allyPaintTower(RobotController rc, MapLocation loc) throws GameActionException {
+        if (!rc.canSenseRobotAtLocation(loc) || rc.senseRobotAtLocation(loc).getTeam() != rc.getTeam()) {
             return false;
         }
         final UnitType tp = rc.senseRobotAtLocation(loc).type;
-        return (
-                tp == UnitType.LEVEL_ONE_PAINT_TOWER || tp == UnitType.LEVEL_TWO_PAINT_TOWER ||
-                        tp == UnitType.LEVEL_THREE_PAINT_TOWER
-        );
+        return (tp == UnitType.LEVEL_ONE_PAINT_TOWER || tp == UnitType.LEVEL_TWO_PAINT_TOWER || tp == UnitType.LEVEL_THREE_PAINT_TOWER);
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
@@ -86,7 +75,8 @@ public class Splasher {
                 int curScr = 0;
                 for (MapInfo curTile : rc.senseNearbyMapInfos(tgt, 4)) {
                     switch (curTile.getPaint()) {
-                        case ALLY_PRIMARY, ALLY_SECONDARY -> curScr -= 5;
+                        case ALLY_PRIMARY -> curScr -= 0;
+                        case ALLY_SECONDARY -> curScr -= 5;
                         case EMPTY -> curScr += 2;
                         case ENEMY_PRIMARY, ENEMY_SECONDARY -> curScr += 3;
                     }
@@ -109,6 +99,12 @@ public class Splasher {
                     double[] moveScore = new double[9];
                     for (int i = 0; i < 9; i++) {
                         moveScore[i] = 0;
+                    }
+
+                    // Move away from the origin
+                    if (origin != null) {
+                        final MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
+                        moveScore[origin.directionTo(center).ordinal()] += 3;
                     }
 
                     for (MapInfo tile : nearbyTiles) {
@@ -136,7 +132,7 @@ public class Splasher {
 
                     // TODO: Add probabilistic choice to avoid collisions?
                     int bestDir = -1;
-                    for (int i = 9; --i >= 0; ) {
+                    for (int i = 8; --i >= 0; ) {
                         if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                             bestDir = i;
                         }
@@ -152,7 +148,8 @@ public class Splasher {
                 break;
             case GOING_HOME:
                 if (rc.isMovementReady()) {
-                    rc.move(GameUtils.greedyPath(rc, myLoc, closestPT));
+                    Direction dir = GameUtils.greedyPath(rc, myLoc, workLoc);
+                    if (dir != Direction.CENTER) rc.move(dir);
                 }
                 if (rc.getPaint() >= 200) {
                     curState = State.GOING_BACK;
@@ -160,7 +157,8 @@ public class Splasher {
                 break;
             case GOING_BACK:
                 if (rc.isMovementReady()) {
-                    rc.move(GameUtils.greedyPath(rc, myLoc, workLoc));
+                    Direction dir = GameUtils.greedyPath(rc, myLoc, workLoc);
+                    if (dir != Direction.CENTER) rc.move(dir);
                 }
                 if (myLoc.isWithinDistanceSquared(workLoc, 4)) {
                     curState = State.WORKING;

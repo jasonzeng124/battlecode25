@@ -43,7 +43,7 @@ public class Pawn {
     };
 
     public static MapInfo[] nearbyTiles;
-    public static MapLocation myLoc, closestPT;
+    public static MapLocation origin, myLoc, closestPT;
 
     public static int prevDir;
     public static int prevType = -1;
@@ -53,6 +53,13 @@ public class Pawn {
     static int qClearTime = 0;
 
     public static void updateNearby(RobotController rc) throws GameActionException {
+        if (origin == null) {
+            for (Message msg : rc.readMessages(-1)) {
+                final int data = msg.getBytes();
+                origin = new MapLocation(data & 63, (data >> 6) & 63);
+                break;
+            }
+        }
         myLoc = rc.getLocation();
         nearbyTiles = rc.senseNearbyMapInfos();
 
@@ -74,6 +81,11 @@ public class Pawn {
 
     public static PaintType defaultPattern(MapLocation loc) {
         return ((loc.x + loc.y) % 2 == 0) && (((3 * loc.x + loc.y) % 10) != 0) ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY;
+    }
+
+    static int getHash(MapLocation loc) {
+        // Do something with this later
+        return (loc.x + loc.y) * (loc.x + loc.y + 1) / 2 + loc.y;
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
@@ -166,7 +178,7 @@ public class Pawn {
         if (rc.isActionReady() && rc.getPaint() < 150) {
             for (RobotInfo robot : rc.senseNearbyRobots()) {
                 final MapLocation loc = robot.getLocation();
-                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && robot.team == rc.getTeam() && robot.type.paintPerTurn > 0 && robot.getPaintAmount() >= 75) {
+                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && robot.team == rc.getTeam() && robot.getType().isTowerType() && (robot.type.paintPerTurn == 0 || robot.getPaintAmount() >= 275)) {
                     int delta = -1 * java.lang.Math.min(robot.paintAmount, 200 - rc.getPaint());
                     if (delta < 0) {
                         rc.transferPaint(loc, delta);
@@ -231,6 +243,16 @@ public class Pawn {
             }
         }
 
+        // Share the origin
+        if (origin != null) {
+            rc.setIndicatorDot(origin, 255, 162, 0);
+            for (RobotInfo r : rc.senseNearbyRobots(myLoc, 9, rc.getTeam())) {
+                if (r.type.isTowerType() && rc.canSendMessage(r.getLocation())) {
+                    rc.sendMessage(r.getLocation(), origin.x | (origin.y << 6));
+                }
+            }
+        }
+
         if (rc.isMovementReady()) {
             // Inertia
             moveScore[prevDir] += 5;
@@ -268,7 +290,7 @@ public class Pawn {
 
             // TODO: Add probabilistic choice to avoid collisions?
             int bestDir = -1;
-            for (int i = 9; --i >= 0;) {
+            for (int i = 8; --i >= 0;) {
                 if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                     bestDir = i;
                 }
