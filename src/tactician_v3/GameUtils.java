@@ -1,4 +1,4 @@
-package tactician_v2;
+package tactician_v3;
 
 import battlecode.common.*;
 
@@ -36,7 +36,7 @@ public class GameUtils {
     }
 
     // Greedy pathing
-    public static Direction greedyPath(RobotController rc, MapLocation a, MapLocation b) {
+    static Direction greedyPath(RobotController rc, MapLocation a, MapLocation b) {
         final int idx = a.directionTo(b).ordinal();
         int[] order = {
                 idx + 4,

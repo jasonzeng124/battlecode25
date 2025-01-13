@@ -1,4 +1,4 @@
-package tactician_v2;
+package tactician_v3;
 
 import battlecode.common.*;
 
@@ -7,9 +7,7 @@ public class Splasher {
 
     enum State {
         WORKING, GOING_HOME, GOING_BACK
-    }
-
-    ;
+    };
 
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
@@ -75,7 +73,6 @@ public class Splasher {
                 int curScr = 0;
                 for (MapInfo curTile : rc.senseNearbyMapInfos(tgt, 4)) {
                     switch (curTile.getPaint()) {
-                        case ALLY_PRIMARY -> curScr -= 0;
                         case ALLY_SECONDARY -> curScr -= 5;
                         case EMPTY -> curScr += 2;
                         case ENEMY_PRIMARY, ENEMY_SECONDARY -> curScr += 3;

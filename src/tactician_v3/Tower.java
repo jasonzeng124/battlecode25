@@ -1,4 +1,4 @@
-package tactician_v2;
+package tactician_v3;
 
 import battlecode.common.*;
 
@@ -6,7 +6,16 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class Tower {
-    public static final Direction[] directions = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST,};
+    public static final Direction[] directions = {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.EAST,
+            Direction.SOUTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHWEST,
+            Direction.WEST,
+            Direction.NORTHWEST,
+    };
 
     static MapLocation origin;
     static ArrayList<Integer> dispatched = new ArrayList<>();
@@ -17,7 +26,7 @@ public class Tower {
 
 
     public static void spawn(RobotController rc) throws GameActionException {
-        final int offset = tactician_v3.FastMath.rand256() % 8;
+        final int offset = FastMath.rand256() % 8;
         for (int i = 0; i < 8; i++) {
             final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);
             if (rc.canBuildRobot(next, loc)) {
@@ -104,7 +113,6 @@ public class Tower {
                     }
                 }
             }
-
         }
 
         // Share the origin
