@@ -45,13 +45,10 @@ public class Pawn {
     };
 
     enum State {
-        WANDERING, BUILDING, REFILLING, RETURNING_TO_WORK
-    }
+            WANDERING, BUILDING, REFILLING, RETURNING_TO_WORK
+    };
 
-    ;
-
-    public static MapInfo[] nearbyTiles;
-    public static MapLocation origin, myLoc, workLoc, refillLoc, ruinLoc;
+    public static MapLocation origin, workLoc, refillLoc, ruinLoc;
     public static int ruinTypeID = -1;
 
     public static int prevDir;
@@ -64,9 +61,6 @@ public class Pawn {
     static State curState = State.WANDERING;
 
     public static void updateNearby(RobotController rc) throws GameActionException {
-        myLoc = rc.getLocation();
-        nearbyTiles = rc.senseNearbyMapInfos();
-
         if (origin == null) {
             for (Message msg : rc.readMessages(-1)) {
                 final int data = msg.getBytes();
@@ -76,7 +70,7 @@ public class Pawn {
         }
         if (origin != null) {
             rc.setIndicatorDot(origin, 255, 162, 0);
-            for (RobotInfo r : rc.senseNearbyRobots(myLoc, 9, rc.getTeam())) {
+            for (RobotInfo r : rc.senseNearbyRobots(rc.getLocation(), 9, rc.getTeam())) {
                 if (r.type.isTowerType() && rc.canSendMessage(r.getLocation())) {
                     rc.sendMessage(r.getLocation(), origin.x | (origin.y << 6));
                 }
@@ -108,7 +102,7 @@ public class Pawn {
             case WANDERING:
                 rc.setIndicatorString("Pawn: wandering");
 
-                workLoc = myLoc;
+                workLoc = rc.getLocation();
 
                 if (rc.isMovementReady()) {
                     double[] moveScore = new double[9];
@@ -117,10 +111,10 @@ public class Pawn {
                     // Inertia
                     moveScore[prevDir] += 5;
 
-                    for (MapInfo tile : nearbyTiles) {
+                    for (MapInfo tile : rc.senseNearbyMapInfos()) {
                         final MapLocation loc = tile.getMapLocation();
-                        final int dir = myLoc.directionTo(loc).ordinal();
-                        final double dist = myLoc.distanceSquaredTo(loc);
+                        final int dir = rc.getLocation().directionTo(loc).ordinal();
+                        final double dist = rc.getLocation().distanceSquaredTo(loc);
 
                         // Get close to enemy paint, but not onto it
                         if (tile.getPaint().isEnemy()) {
@@ -158,7 +152,7 @@ public class Pawn {
 
                 // Attack nearby enemy towers
                 if (rc.isActionReady() && rc.getPaint() >= 75) {
-                    for (RobotInfo r : rc.senseNearbyRobots(myLoc, 9, rc.getTeam().opponent())) {
+                    for (RobotInfo r : rc.senseNearbyRobots(rc.getLocation(), 9, rc.getTeam().opponent())) {
                         if (r.type.isTowerType()) {
                             rc.attack(r.getLocation());
                             break;
@@ -184,18 +178,17 @@ public class Pawn {
                     }
 
                     MapLocation placed = null;
-                    for (MapInfo tile : nearbyTiles) {
+                    for (MapInfo tile : rc.senseNearbyMapInfos(rc.getLocation(), 4)) {
                         final MapLocation loc = tile.getMapLocation();
-                        if (myLoc.isWithinDistanceSquared(loc, 4)) {
-                            rc.setIndicatorDot(loc, 0, 0, 255);
+                        rc.setIndicatorDot(loc, 0, 0, 255);
 
-                            if (qClearArr[loc.x][loc.y] < qClearTime && isPaintable(rc, loc) && tile.getPaint() != defaultPattern(loc)) {
-                                rc.attack(loc, defaultPattern(loc) == PaintType.ALLY_SECONDARY);
-                                rc.setIndicatorDot(loc, 0, 255, 0);
-                                placed = loc;
-                                break;
-                            }
+                        if (qClearArr[loc.x][loc.y] < qClearTime && isPaintable(rc, loc) && tile.getPaint() != defaultPattern(loc)) {
+                            rc.attack(loc, defaultPattern(loc) == PaintType.ALLY_SECONDARY);
+                            rc.setIndicatorDot(loc, 0, 255, 0);
+                            placed = loc;
+                            break;
                         }
+
                         if (placed != null) {
                             break;
                         }
@@ -244,7 +237,7 @@ public class Pawn {
 
                 // Move closer, circle around
                 if (rc.isMovementReady()) {
-                    rc.move(GameUtils.greedyPath(rc, myLoc, ruinLoc));
+                    rc.move(GameUtils.greedyPath(rc, rc.getLocation(), ruinLoc));
                 }
 
                 // Fill in any spots in the pattern with the appropriate paint.
@@ -284,10 +277,12 @@ public class Pawn {
                 // TODO: be even more incentivized to save paint (stay on our own color, etc) while refilling
 
                 // Move closer
-                rc.move(GameUtils.greedyPath(rc, myLoc, refillLoc));
+                if (rc.isMovementReady()) {
+                    rc.move(GameUtils.greedyPath(rc, rc.getLocation(), refillLoc));
+                }
 
                 // Withdraw paint
-                for (RobotInfo r : rc.senseNearbyRobots(myLoc, 2, rc.getTeam())) {
+                for (RobotInfo r : rc.senseNearbyRobots(rc.getLocation(), 2, rc.getTeam())) {
                     if (r.type.paintPerTurn > 0 && rc.getPaint() + r.getPaintAmount() >= 175) {
                         final int amount = -Math.min(r.getPaintAmount(), 200 - rc.getPaint());
                         if (rc.canTransferPaint(r.getLocation(), amount)) {
@@ -306,10 +301,12 @@ public class Pawn {
                 // TODO: guess where the frontier has moved to while we were away
 
                 // Move closer
-                rc.move(GameUtils.greedyPath(rc, myLoc, workLoc));
+                if (rc.isMovementReady()) {
+                    rc.move(GameUtils.greedyPath(rc, rc.getLocation(), workLoc));
+                }
 
                 // TRANSITIONS
-                if (myLoc.isWithinDistanceSquared(workLoc, 4)) {
+                if (rc.getLocation().isWithinDistanceSquared(workLoc, 4)) {
                     curState = State.WANDERING;
                 }
                 break;
