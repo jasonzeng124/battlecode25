@@ -287,14 +287,37 @@ public class Pawn {
                 rc.setIndicatorString("Pawn: refilling");
                 // TODO: be even more incentivized to save paint (stay on our own color, etc) while refilling
 
-                // Move closer
+                // Move close, and try to wait on a tile that incurs minimal penalties
                 if (rc.isMovementReady()) {
-                    rc.move(GameUtils.greedyPath(rc, rc.getLocation(), refillLoc));
+                    if (!rc.getLocation().isWithinDistanceSquared(refillLoc, 2)) {
+                        rc.move(GameUtils.greedyPath(rc, rc.getLocation(), refillLoc));
+                    } else {
+                        int bestScore = -100;
+                        Direction bestDir = null;
+                        for (int i = 9; --i >= 0; ) {
+                            if (rc.canMove(DIRS[i]) || DIRS[i] == Direction.CENTER) {
+                                final MapLocation loc = rc.getLocation().add(DIRS[i]);
+                                int score = 0;
+                                switch (rc.senseMapInfo(loc).getPaint()) {
+                                    case EMPTY -> score -= 1;
+                                    case ENEMY_PRIMARY, ENEMY_SECONDARY -> score -= 5;
+                                }
+                                score -= 2 * rc.senseNearbyRobots(loc, 2, rc.getTeam()).length;
+                                if (score > bestScore) {
+                                    bestScore = score;
+                                    bestDir = DIRS[i];
+                                }
+                            }
+                        }
+                        if (bestDir != Direction.CENTER) {
+                            rc.move(bestDir);
+                        }
+                    }
                 }
 
                 // Withdraw paint
                 for (RobotInfo r : rc.senseNearbyRobots(rc.getLocation(), 2, rc.getTeam())) {
-                    if (r.type.paintPerTurn > 0 && rc.getPaint() + r.getPaintAmount() >= 175) {
+                    if (r.type.paintPerTurn > 0 && rc.getPaint() + r.getPaintAmount() >= 200) {
                         final int amount = -Math.min(r.getPaintAmount(), 200 - rc.getPaint());
                         if (rc.canTransferPaint(r.getLocation(), amount)) {
                             rc.transferPaint(r.getLocation(), amount);
@@ -303,7 +326,7 @@ public class Pawn {
                 }
 
                 // TRANSITIONS
-                if (rc.getPaint() >= 175) {
+                if (rc.getPaint() >= 190) {
                     curState = State.RETURNING_TO_WORK;
                 }
                 break;
