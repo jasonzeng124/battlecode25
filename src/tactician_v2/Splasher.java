@@ -74,8 +74,10 @@ public class Splasher {
                 }
                 int curScr = 0;
                 for (MapInfo curTile : rc.senseNearbyMapInfos(tgt, 4)) {
+                    if (curTile.isWall()) {
+                        continue;
+                    }
                     switch (curTile.getPaint()) {
-                        case ALLY_PRIMARY -> curScr -= 0;
                         case ALLY_SECONDARY -> curScr -= 5;
                         case EMPTY -> curScr += 2;
                         case ENEMY_PRIMARY, ENEMY_SECONDARY -> curScr += 3;
