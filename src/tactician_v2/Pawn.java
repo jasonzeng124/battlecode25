@@ -202,9 +202,15 @@ public class Pawn {
             // Use a quick-clearing array to set banned tiles, from unfinished ruins
             qClearTime++;
             for (MapLocation loc : rc.senseNearbyRuins(-1)) {
+<<<<<<< HEAD
+                if (!rc.canSenseRobotAtLocation(loc)) {
+                    for (int i = 5; --i >= 0; ) {
+                        for (int j = 5; --j >= 0; ) {
+=======
                 if (!rc.canSenseRobotAtLocation(loc) && rc.getNumberTowers() < 25) {
                     for (int i = 5; --i >= 0;) {
                         for (int j = 5; --j >= 0;) {
+>>>>>>> origin/main
                             int x = loc.x + i - 2, y = loc.y + j - 2;
                             if (x >= 0 && x < 60 && y >= 0 && y < 60) {
                                 qClearArr[x][y] = qClearTime;
