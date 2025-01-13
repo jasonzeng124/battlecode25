@@ -46,6 +46,8 @@ public class Pawn {
     public static MapLocation myLoc, closestPT;
 
     public static int prevDir;
+    public static int prevType = -1;
+    public static MapLocation prevRuinLoc;
 
     public static int[][] qClearArr = new int[60][60];
     static int qClearTime = 0;
@@ -75,69 +77,91 @@ public class Pawn {
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
+        
+       // rc.setIndicatorString("prevType: " + prevType);
         final int curRound = rc.getRoundNum();
 
         double[] moveScore = new double[9];
         for (int i = 9; --i >= 0;) {
             moveScore[i] = 0;
         }
-
+        //refuel
+        if (prevRuinLoc != null && rc.canSenseRobotAtLocation(prevRuinLoc) && rc.getPaint() < 100) {
+            //don't move anywhere until you have refueled
+            if(rc.canTransferPaint(prevRuinLoc, rc.getPaint()-200)){
+                rc.transferPaint(prevRuinLoc, rc.getPaint()-200);
+            }else{
+                return;
+            }
+        }
+        MapLocation ruinFocus = null;
         for (MapInfo tile : nearbyTiles) {
             // Ruins are our top priority
             if (rc.getNumberTowers() < 25 && tile.hasRuin()) {
                 final MapLocation loc = tile.getMapLocation();
-
-                // Skip if there are already many workers there
-                int cnt = 0;
-                for (RobotInfo r : rc.senseNearbyRobots(loc, 4, rc.getTeam())) {
-                    if (r.type == UnitType.SOLDIER) {
-                        cnt++;
-                    }
-                }
-                if (cnt >= 2) {
-                    continue;
-                }
-
-                // Unfinished ruin
-                if (!rc.canSenseRobotAtLocation(loc)) {
-                    // Decide which type of tower to build
-                    final int typeId = (loc.x + loc.y) % 4 == 0 ? 0 : 1;
-                    final UnitType type = typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
-
-                    // Fill in any spots in the pattern with the appropriate paint.
-                    boolean filled = false;
-                    for (int i = 5; --i >= 0;) {
-                        for (int j = 5; --j >= 0;) {
-                            final MapLocation nearbyLoc = new MapLocation(loc.x + i - 2, loc.y + j - 2);
-                            if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
-                                rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
-                                rc.setIndicatorDot(nearbyLoc, 255, 0, 0);
-                                filled = true;
-                                break;
-                            }
+                if(prevRuinLoc == null || loc.equals(prevRuinLoc)){
+                    // Skip if there are already many workers there
+                    int cnt = 0;
+                    for (RobotInfo r : rc.senseNearbyRobots(loc, 4, rc.getTeam())) {
+                        if (r.type == UnitType.SOLDIER) {
+                            cnt++;
                         }
-                        if (filled)
-                            break;
+                    }
+                  //  rc.setIndicatorString(cnt + " ");
+                    if (cnt >= 1) {
+                        continue;
                     }
 
-                    // Complete the ruin if we can.
-                    if (filled && rc.canCompleteTowerPattern(type, loc)) {
-                        rc.completeTowerPattern(type, loc);
-                        rc.setTimelineMarker("Tower built", 0, 255, 0);
-                        System.out.println("Built a tower at " + loc + "!");
-                    }
+                    // Unfinished ruin
+                    if (!rc.canSenseRobotAtLocation(loc)) {
+                        // Decide which type of tower to build
+                        final double chanceOfMoney = (rc.getNumberTowers() <= 2) ? (1.0) : (0.5 - 0.001 * rc.getRoundNum());
+                        final int typeId = (prevType == -1 ? ((((FastMath.rand256()/256.0) <= (chanceOfMoney))) ? 1 : 0) : prevType);
+                        final UnitType type = (typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER);
+                        // Fill in any spots in the pattern with the appropriate paint.
+                        boolean filled = false;
+                        for (int i = 5; --i >= 0;) {
+                            for (int j = 5; --j >= 0;) {
+                                final MapLocation nearbyLoc = new MapLocation(loc.x + i - 2, loc.y + j - 2);
+                                if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
+                                    rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
+                                    rc.setIndicatorDot(nearbyLoc, 255, 0, 0);
+                                    filled = true;
+                                    break;
+                                }
+                            }
+                            if (filled)
+                                break;
+                        }
 
-                    // Move closer
-                    moveScore[GameUtils.greedyPath(rc, myLoc, loc).ordinal()] += 15;
-                } else {
-                    // Finished ruin, make improvements while passing by
-                    if (rc.canUpgradeTower(loc) && rc.getNumberTowers() >= 5 && rc.getChips() >= 1300) {
-                        rc.upgradeTower(loc);
+                        ruinFocus = loc;
+                        prevType = typeId;
+                        // Complete the ruin if we can.
+                        if (rc.canCompleteTowerPattern(type, loc)) {
+                            rc.completeTowerPattern(type, loc);
+                            rc.setTimelineMarker("Tower built", 0, 255, 0);
+                            System.out.println("Built a tower at " + loc + "!");
+                            prevType = -1;
+                        }
+
+                        // Move closer
+                        Direction dirToRuin = GameUtils.greedyPath(rc, myLoc, loc);
+                        if(rc.canMove(dirToRuin)){
+                            rc.move(dirToRuin);
+                        }
+                        if(rc.canMove(GameUtils.greedyPath(rc, myLoc, loc).rotateLeft())){
+                            rc.move(dirToRuin);
+                        }
+                    } else {
+                        // Finished ruin, make improvements while passing by
+                        if (rc.canUpgradeTower(loc) && rc.getNumberTowers() >= 5 && rc.getChips() >= 1300) {
+                            rc.upgradeTower(loc);
+                        }
                     }
                 }
             }
         }
-
+        prevRuinLoc = ruinFocus;
         // Withdraw paint
         if (rc.isActionReady() && rc.getPaint() < 150) {
             for (RobotInfo robot : rc.senseNearbyRobots()) {

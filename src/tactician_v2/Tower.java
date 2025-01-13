@@ -19,41 +19,90 @@ public class Tower {
 
     static ArrayList<Integer> dispatched = new ArrayList<>();
     static Random rand = new Random();
-    @SuppressWarnings("unused")
-    public static void run(RobotController rc) throws GameActionException {
-        FastMath.initRand(rc);
+    static UnitType next = UnitType.SOLDIER;
+    static int chipsPerSecond = -1;
+    static int prevChips = 1000000000;
 
-        if (
-            rc.isActionReady() &&
-            (rc.getRoundNum() < 100 || (rc.getType().paintPerTurn > 0 && rc.getMoney() >= 1300 && rc.getPaint() >= 300))
-        ) {
-            UnitType type = UnitType.SOLDIER;
 
-            if (rc.getRoundNum() >= rc.getMapWidth() * rc.getMapHeight() / 12) {
-                final double val = rand.nextDouble();
-                if (val < 0.3) {
-                    type = UnitType.MOPPER;
-                } else if (val < 0.6) {
-                    type = UnitType.SPLASHER;
+    public static void spawn(RobotController rc) throws GameActionException {
+        final int offset = FastMath.rand256() % 8;
+        for (int i = 0; i < 8; i++) {
+            final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);
+            if (rc.canBuildRobot(next, loc)) {
+                rc.buildRobot(next, loc);
+                if(rc.getType().paintPerTurn == 0){
+                    if(rc.getPaint() < 200){
+                        next = UnitType.MOPPER;
+                    }else{
+                        next = UnitType.SOLDIER;
+                    }
+                }else{
+                    next = UnitType.SOLDIER;
+                    if (rc.getRoundNum() >= rc.getMapWidth() * rc.getMapHeight() / 12) {
+                        final double val = rand.nextDouble();
+                        if (val < 0.3) {
+                            next = UnitType.MOPPER;
+                        } else if (val < 0.6) {
+                            next = UnitType.SPLASHER;
+                        }
+                    }
                 }
             }
+        }
+    }
 
+    public static void countChips(RobotController rc) throws GameActionException {
+        int curChips = rc.getMoney();
+        if((curChips - prevChips) > chipsPerSecond){
+            chipsPerSecond = (curChips - prevChips);
+        }
+        prevChips = curChips;
+    }
+
+    @SuppressWarnings("unused")
+    public static void run(RobotController rc) throws GameActionException {
+        countChips(rc);
+        rc.attack(null);
+        boolean hit = false;
+        for (RobotInfo robot : rc.senseNearbyRobots()) {
+            final MapLocation loc = robot.getLocation();
+            if (robot.team != rc.getTeam()){
+                if(rc.canAttack(loc)) {
+                    rc.attack(loc);
+                }
+                hit = true;
+            }
+        }
+        //build some moppers to scare away the soldiers
+        if(hit){
             final int offset = FastMath.rand256() % 8;
             for (int i = 0; i < 8; i++) {
                 final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);
-                if (rc.canBuildRobot(type, loc)) {
-                    rc.buildRobot(type, loc);
+                if (rc.canBuildRobot(UnitType.MOPPER, loc)) {
+                    rc.buildRobot(UnitType.MOPPER, loc);
                 }
             }
         }
-
-        rc.attack(null);
-        for (RobotInfo robot : rc.senseNearbyRobots()) {
-            final MapLocation loc = robot.getLocation();
-
-            if (robot.team != rc.getTeam() && rc.canAttack(loc)) {
-                rc.attack(loc);
+        //build something
+        if (rc.isActionReady()){
+            if(rc.getRoundNum() < 100){
+                if(rc.getMoney() >= 1000){ 
+                    spawn(rc);
+                }
+            }else{
+                if(rc.getType().paintPerTurn > 0){
+                    if(rc.getMoney() >= 100 * rc.getNumberTowers()){
+                        spawn(rc);
+                    }
+                }else{
+                    if(rc.getRoundNum()%20 == 0 && rc.getMoney() >= 100 * rc.getNumberTowers()){
+                        spawn(rc);
+                    }
+                }
             }
+
         }
+
+        
     }
 }

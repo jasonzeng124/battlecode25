@@ -27,12 +27,14 @@ public class RobotPlayer {
 
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
+        
+        FastMath.initRand(rc);
         if (!init) {
             if (rc.getType().isTowerType())
                 myJob = Job.BASE;
             if (rc.getType() == UnitType.SOLDIER)
-                myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
-//                myJob = Job.PAWN;
+             //   myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
+                myJob = Job.PAWN;
             if (rc.getType() == UnitType.MOPPER)
                 myJob = Job.MOPPER;
             if (rc.getType() == UnitType.SPLASHER) {
