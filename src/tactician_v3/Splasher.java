@@ -65,13 +65,16 @@ public class Splasher {
         if (rc.isActionReady()) {
             MapLocation loc = null;
             int scr = 0;
-            for (MapInfo tile : nearbyTiles) {
+            for (MapInfo tile : rc.senseNearbyMapInfos(rc.getLocation(), 4)) {
                 final MapLocation tgt = tile.getMapLocation();
                 if (!rc.canAttack(tgt)) {
                     continue;
                 }
                 int curScr = 0;
                 for (MapInfo curTile : rc.senseNearbyMapInfos(tgt, 4)) {
+                    if (curTile.isWall()) {
+                        continue;
+                    }
                     switch (curTile.getPaint()) {
                         case ALLY_SECONDARY -> curScr -= 5;
                         case EMPTY -> curScr += 2;
