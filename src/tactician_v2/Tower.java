@@ -29,7 +29,7 @@ public class Tower {
         ) {
             UnitType type = UnitType.SOLDIER;
 
-            if (rc.getRoundNum() >= rc.getMapWidth() * rc.getMapHeight() / 12) {
+            if (rc.getRoundNum() >= 120) {
                 final double val = rand.nextDouble();
                 if (val < 0.3) {
                     type = UnitType.MOPPER;

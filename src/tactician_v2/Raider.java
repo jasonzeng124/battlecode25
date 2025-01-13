@@ -118,7 +118,7 @@ public class Raider {
                     }
                 }
                 if(rc.getRoundNum()%2 != 0 || synctrigger){
-                    if(rc.canMove(bestMove)){
+                    if(rc.canMove(bestMove) && bestMove != Direction.CENTER){
                         rc.move(bestMove);
                     }
                 }

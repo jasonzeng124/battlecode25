@@ -86,7 +86,8 @@ public class Splasher {
                 int curScr = 0;
                 for (MapInfo curTile : rc.senseNearbyMapInfos(tgt, 4)) {
                     switch (curTile.getPaint()) {
-                        case ALLY_PRIMARY, ALLY_SECONDARY -> curScr -= 5;
+                        case ALLY_PRIMARY -> curScr -= 0;
+                        case ALLY_SECONDARY -> curScr -= 5;
                         case EMPTY -> curScr += 2;
                         case ENEMY_PRIMARY, ENEMY_SECONDARY -> curScr += 3;
                     }
@@ -152,7 +153,8 @@ public class Splasher {
                 break;
             case GOING_HOME:
                 if (rc.isMovementReady()) {
-                    rc.move(GameUtils.greedyPath(rc, myLoc, closestPT));
+                    Direction dir = GameUtils.greedyPath(rc, myLoc, workLoc);
+                    if (dir != Direction.CENTER) rc.move(dir);
                 }
                 if (rc.getPaint() >= 200) {
                     curState = State.GOING_BACK;
@@ -160,7 +162,8 @@ public class Splasher {
                 break;
             case GOING_BACK:
                 if (rc.isMovementReady()) {
-                    rc.move(GameUtils.greedyPath(rc, myLoc, workLoc));
+                    Direction dir = GameUtils.greedyPath(rc, myLoc, workLoc);
+                    if (dir != Direction.CENTER) rc.move(dir);
                 }
                 if (myLoc.isWithinDistanceSquared(workLoc, 4)) {
                     curState = State.WORKING;

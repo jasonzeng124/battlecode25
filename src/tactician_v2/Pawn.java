@@ -142,7 +142,7 @@ public class Pawn {
         if (rc.isActionReady() && rc.getPaint() < 150) {
             for (RobotInfo robot : rc.senseNearbyRobots()) {
                 final MapLocation loc = robot.getLocation();
-                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && robot.team == rc.getTeam() && robot.type.paintPerTurn > 0 && robot.getPaintAmount() >= 75) {
+                if (rc.getLocation().isWithinDistanceSquared(loc, 2) && robot.team == rc.getTeam() && robot.getType().isTowerType() && (robot.type.paintPerTurn == 0 || robot.getPaintAmount() >= 275)) {
                     int delta = -1 * java.lang.Math.min(robot.paintAmount, 200 - rc.getPaint());
                     if (delta < 0) {
                         rc.transferPaint(loc, delta);
@@ -244,7 +244,7 @@ public class Pawn {
 
             // TODO: Add probabilistic choice to avoid collisions?
             int bestDir = -1;
-            for (int i = 9; --i >= 0;) {
+            for (int i = 8; --i >= 0;) {
                 if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                     bestDir = i;
                 }

@@ -134,7 +134,7 @@ public class Mopper {
 
             // TODO: Add probabilistic choice to avoid collisions?
             int bestDir = -1;
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < 8; i++) {
                 if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                     bestDir = i;
                 }
