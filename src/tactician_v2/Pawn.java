@@ -43,7 +43,7 @@ public class Pawn {
     };
 
     public static MapInfo[] nearbyTiles;
-    public static MapLocation myLoc, closestPT;
+    public static MapLocation origin, myLoc, closestPT;
 
     public static int prevDir;
 
@@ -51,6 +51,13 @@ public class Pawn {
     static int qClearTime = 0;
 
     public static void updateNearby(RobotController rc) throws GameActionException {
+        if (origin == null) {
+            for (Message msg : rc.readMessages(-1)) {
+                final int data = msg.getBytes();
+                origin = new MapLocation(data & 63, (data >> 6) & 63);
+                break;
+            }
+        }
         myLoc = rc.getLocation();
         nearbyTiles = rc.senseNearbyMapInfos();
 
@@ -72,6 +79,11 @@ public class Pawn {
 
     public static PaintType defaultPattern(MapLocation loc) {
         return ((loc.x + loc.y) % 2 == 0) && (((3 * loc.x + loc.y) % 10) != 0) ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY;
+    }
+
+    static int getHash(MapLocation loc) {
+        // Do something with this later
+        return (loc.x + loc.y) * (loc.x + loc.y + 1) / 2 + loc.y;
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
@@ -101,7 +113,7 @@ public class Pawn {
                 // Unfinished ruin
                 if (!rc.canSenseRobotAtLocation(loc)) {
                     // Decide which type of tower to build
-                    final int typeId = (loc.x + loc.y) % 4 == 0 ? 0 : 1;
+                    final int typeId = getHash(loc) % 4 == 0 ? 0 : 1;
                     final UnitType type = typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER;
 
                     // Fill in any spots in the pattern with the appropriate paint.
@@ -121,7 +133,7 @@ public class Pawn {
                     }
 
                     // Complete the ruin if we can.
-                    if (filled && rc.canCompleteTowerPattern(type, loc)) {
+                    if (rc.canCompleteTowerPattern(type, loc)) {
                         rc.completeTowerPattern(type, loc);
                         rc.setTimelineMarker("Tower built", 0, 255, 0);
                         System.out.println("Built a tower at " + loc + "!");
@@ -131,8 +143,17 @@ public class Pawn {
                     moveScore[GameUtils.greedyPath(rc, myLoc, loc).ordinal()] += 15;
                 } else {
                     // Finished ruin, make improvements while passing by
-                    if (rc.canUpgradeTower(loc) && rc.getNumberTowers() >= 5 && rc.getChips() >= 1300) {
+                    if (rc.canUpgradeTower(loc) && rc.getNumberTowers() >= 5 && rc.getChips() >= 1000) {
                         rc.upgradeTower(loc);
+                    }
+
+                    // Make sure it's surrounded by allied tiles so we can send messages
+                    for (int i = 8; --i >= 0; ) {
+                        final MapLocation nearbyLoc = loc.add(DIRS[i]);
+                        if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() == PaintType.EMPTY) {
+                            rc.attack(nearbyLoc, defaultPattern(nearbyLoc) == PaintType.ALLY_SECONDARY);
+                            break;
+                        }
                     }
                 }
             }
@@ -203,6 +224,16 @@ public class Pawn {
                             rc.completeResourcePattern(loc);
                         }
                     }
+                }
+            }
+        }
+
+        // Share the origin
+        if (origin != null) {
+            rc.setIndicatorDot(origin, 255, 162, 0);
+            for (RobotInfo r : rc.senseNearbyRobots(myLoc, 9, rc.getTeam())) {
+                if (r.type.isTowerType() && rc.canSendMessage(r.getLocation())) {
+                    rc.sendMessage(r.getLocation(), origin.x | (origin.y << 6));
                 }
             }
         }
