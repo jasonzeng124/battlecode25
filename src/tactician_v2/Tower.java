@@ -104,11 +104,11 @@ public class Tower {
                 }
             }else{
                 if(rc.getType().paintPerTurn > 0){
-                    if(rc.getMoney() >= 100 * rc.getNumberTowers()){
+                    if(rc.getMoney() >= 500 + 100 * rc.getNumberTowers()){
                         spawn(rc);
                     }
                 }else{
-                    if(rc.getRoundNum()%20 == 0 && rc.getMoney() >= 100 * rc.getNumberTowers()){
+                    if(rc.getRoundNum()%20 == 0 && rc.getMoney() >= 500 + 100 * rc.getNumberTowers()){
                         spawn(rc);
                     }
                 }
