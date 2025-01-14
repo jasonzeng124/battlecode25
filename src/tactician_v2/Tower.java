@@ -30,11 +30,11 @@ public class Tower {
                     }
                 } else {
                     next = UnitType.SOLDIER;
-                    if (rc.getRoundNum() >= rc.getMapWidth() * rc.getMapHeight() / 12) {
+                    if (rc.getRoundNum() >= rc.getMapWidth() * rc.getMapHeight() / 15) {
                         final double val = rand.nextDouble();
-                        if (val < 0.3) {
+                        if (val < 0.33) {
                             next = UnitType.MOPPER;
-                        } else if (val < 0.6) {
+                        } else if (val < 0.66) {
                             next = UnitType.SPLASHER;
                         }
                     }

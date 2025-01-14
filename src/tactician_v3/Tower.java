@@ -1,4 +1,3 @@
-
 package tactician_v3;
 
 import battlecode.common.*;
@@ -15,6 +14,34 @@ public class Tower {
     static UnitType next = UnitType.SOLDIER;
     static int chipsPerSecond = -1;
     static int prevChips = 1000000000;
+
+
+    public static void spawn(RobotController rc) throws GameActionException {
+        final int offset = FastMath.rand256() % 8;
+        for (int i = 0; i < 8; i++) {
+            final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);
+            if (rc.canBuildRobot(next, loc)) {
+                rc.buildRobot(next, loc);
+                if (rc.getType().paintPerTurn == 0) {
+                    if (rc.getPaint() < 200) {
+                        next = UnitType.MOPPER;
+                    } else {
+                        next = UnitType.SOLDIER;
+                    }
+                } else {
+                    next = UnitType.SOLDIER;
+                    if (rc.getRoundNum() >= rc.getMapWidth() * rc.getMapHeight() / 15) {
+                        final double val = rand.nextDouble();
+                        if (val < 0.33) {
+                            next = UnitType.MOPPER;
+                        } else if (val < 0.66) {
+                            next = UnitType.SPLASHER;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     public static void countChips(RobotController rc) throws GameActionException {
         int curChips = rc.getMoney();
@@ -38,37 +65,46 @@ public class Tower {
                 }
             }
         }
-
         countChips(rc);
         rc.attack(null);
-
-        // Build something
-        if (rc.isActionReady() && rc.getChips() >= 1000) {
-            UnitType type = null;
-
-            final int earlyThres = rc.getMapWidth() * rc.getMapHeight() / 15;
-            if (rc.getRoundNum() < earlyThres) {
-                type = UnitType.SOLDIER;
-            } else if (rc.getType().paintPerTurn > 0 && rc.getPaint() >= 300) {
-                final double r = rand.nextDouble();
-                if (r < 0.33) {
-                    type = UnitType.SOLDIER;
-                } else if (r < 0.66) {
-                    type = UnitType.MOPPER;
-                } else {
-                    type = UnitType.SPLASHER;
+        boolean hit = false;
+        for (RobotInfo robot : rc.senseNearbyRobots()) {
+            final MapLocation loc = robot.getLocation();
+            if (robot.team != rc.getTeam()) {
+                if (rc.canAttack(loc)) {
+                    rc.attack(loc);
+                }
+                hit = true;
+            }
+        }
+        //build some moppers to scare away the soldiers
+        if (hit) {
+            final int offset = FastMath.rand256() % 8;
+            for (int i = 0; i < 8; i++) {
+                final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);
+                if (rc.canBuildRobot(UnitType.MOPPER, loc)) {
+                    rc.buildRobot(UnitType.MOPPER, loc);
                 }
             }
-
-            if (type != null) {
-                for (MapInfo tile : rc.senseNearbyMapInfos(rc.getLocation(), 4)) {
-                    final MapLocation loc = tile.getMapLocation();
-                    if (rc.canBuildRobot(type, loc)) {
-                        rc.buildRobot(type, loc);
-                        break;
+        }
+        //build something
+        if (rc.isActionReady()) {
+            if (rc.getRoundNum() < 100) {
+                if (rc.getMoney() >= 1000) {
+                    spawn(rc);
+                }
+            } else {
+                if (rc.getType().paintPerTurn > 0) {
+                    if (rc.getMoney() >= 500 + 100 * rc.getNumberTowers()) {
+                        spawn(rc);
+                    }
+                } else {
+                    if (rc.getRoundNum() % 20 == 0 && rc.getMoney() >= 500 + 100 * rc.getNumberTowers()) {
+                        spawn(rc);
                     }
                 }
             }
+
         }
 
         // Share the origin
