@@ -1,12 +1,12 @@
 package tactician_v2;
 
 import battlecode.common.*;
-import tactician_v3.FastMath;
-import tactician_v3.Mopper;
-import tactician_v3.Pawn;
-import tactician_v3.Raider;
-import tactician_v3.Splasher;
-import tactician_v3.Tower;
+import tactician_v2.FastMath;
+import tactician_v2.Mopper;
+import tactician_v2.Pawn;
+import tactician_v2.Raider;
+import tactician_v2.Splasher;
+import tactician_v2.Tower;
 
 public class RobotPlayer {
     static boolean init = false;
@@ -39,8 +39,8 @@ public class RobotPlayer {
             if (rc.getType().isTowerType())
                 myJob = Job.BASE;
             if (rc.getType() == UnitType.SOLDIER)
-             //   myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
-                myJob = Job.PAWN;
+                myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
+             //   myJob = Job.PAWN;
             if (rc.getType() == UnitType.MOPPER)
                 myJob = Job.MOPPER;
             if (rc.getType() == UnitType.SPLASHER) {
