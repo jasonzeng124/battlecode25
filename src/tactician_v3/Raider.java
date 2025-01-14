@@ -1,4 +1,4 @@
-package tactician_v2;
+package tactician_v3;
 
 import battlecode.common.*;
 
