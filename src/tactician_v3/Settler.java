@@ -72,69 +72,38 @@ public class Settler {
         MapLocation ruinFocus = null;
         for (MapInfo tile : rc.senseNearbyMapInfos()) {
             // Ruins are our top priority
-            if (rc.getNumberTowers() < 25 && tile.hasRuin()) {
+            if (tile.hasRuin()) {
                 final MapLocation loc = tile.getMapLocation();
-                if (prevRuinLoc == null || loc.equals(prevRuinLoc)) {
-                    // Skip if there are already many workers there
-                    int cnt = 0;
-                    for (RobotInfo r : rc.senseNearbyRobots(loc, 4, rc.getTeam())) {
-                        if (r.type == UnitType.SOLDIER) {
-                            cnt++;
-                        }
-                    }
-                    if (cnt >= 1) {
-                        continue;
-                    }
-
-                    // Skip if touched by opponent
-                    boolean bad = false;
-                    for (int i = 5; --i >= 0; ) {
-                        for (int j = 5; --j >= 0; ) {
-                            final MapLocation nearbyLoc = new MapLocation(loc.x + i - 2, loc.y + j - 2);
-                            if (rc.canSenseLocation(nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint().isEnemy()) {
-                                bad = true;
-                                break;
+                
+                // Unfinished ruin
+                if (!rc.canSenseRobotAtLocation(loc) && rc.getNumberTowers() < 25) {
+                    if (prevRuinLoc == null || loc.equals(prevRuinLoc)) {
+                        // Skip if there are already many workers there
+                        int cnt = 0;
+                        for (RobotInfo r : rc.senseNearbyRobots(loc, 8, rc.getTeam())) {
+                            if (r.type == UnitType.SOLDIER) {
+                                cnt++;
                             }
                         }
-                        if (bad)
-                            break;
-                    }
-                    if (bad) {
-                        continue;
-                    }
+                        if (cnt >= 1) {
+                            continue;
+                        }
 
-                    // Unfinished ruin
-                    if (!rc.canSenseRobotAtLocation(loc)) {
-                        // Decide which type of tower to build
-                        final double chanceOfMoney = (rc.getNumberTowers() <= 2) ? (1.0) : (0.5 - 0.001 * rc.getRoundNum());
-                        final int typeId = (prevType == -1 ? ((((FastMath.rand256() / 256.0) <= (chanceOfMoney))) ? 1 : 0) : prevType);
-                        final UnitType type = (typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER);
-
-                        // Fill in any spots in the pattern with the appropriate paint.
-                        boolean filled = false;
+                        // Skip if touched by opponent
+                        boolean bad = false;
                         for (int i = 5; --i >= 0; ) {
                             for (int j = 5; --j >= 0; ) {
                                 final MapLocation nearbyLoc = new MapLocation(loc.x + i - 2, loc.y + j - 2);
-                                if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
-                                    rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
-                                    rc.setIndicatorDot(nearbyLoc, 255, 0, 0);
-                                    filled = true;
+                                if (rc.canSenseLocation(nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint().isEnemy()) {
+                                    bad = true;
                                     break;
                                 }
                             }
-                            if (filled)
+                            if (bad)
                                 break;
                         }
-
-                        ruinFocus = loc;
-                        prevType = typeId;
-
-                        // Complete the ruin if we can.
-                        if (rc.canCompleteTowerPattern(type, loc)) {
-                            rc.completeTowerPattern(type, loc);
-                            rc.setTimelineMarker("Tower built", 0, 255, 0);
-                            System.out.println("Built a tower at " + loc + "!");
-                            prevType = -1;
+                        if (bad) {
+                            continue;
                         }
 
                         // Move closer
@@ -142,9 +111,49 @@ public class Settler {
                         if (rc.canMove(dirToRuin)) {
                             rc.move(dirToRuin);
                         }
-                        if (rc.canMove(GameUtils.greedyPath(rc, rc.getLocation(), loc).rotateLeft())) {
-                            rc.move(dirToRuin);
+                        if (rc.canMove(dirToRuin.rotateLeft())) {
+                            rc.move(dirToRuin.rotateLeft());
                         }
+                        ruinFocus = loc;
+
+                        if(rc.getLocation().distanceSquaredTo(loc) <= 8){
+                            // Decide which type of tower to build
+                            final double chanceOfMoney = (rc.getNumberTowers() <= 2) ? (1.0) : (0.5 - 0.001 * rc.getRoundNum());
+                            final int typeId = (prevType == -1 ? ((((FastMath.fakefloat()) <= (chanceOfMoney))) ? 1 : 0) : prevType);
+                            final UnitType type = (typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER);
+
+                            //fill in current location, avoid wasting paint
+                            MapLocation relToRuin = FastMath.minusVec(rc.getLocation(), loc);
+                            
+                            if (isPaintable(rc, rc.getLocation()) && rc.senseMapInfo(rc.getLocation()).getPaint() != (PTRNS[typeId][relToRuin.x+2][relToRuin.y+2] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
+                                rc.attack(rc.getLocation(), PTRNS[typeId][relToRuin.x+2][relToRuin.y+2] == 1);
+                            }
+                            // Fill in any spots in the pattern with the appropriate paint.
+                            boolean filled = false;
+                            for (int i = 5; --i >= 0; ) {
+                                for (int j = 5; --j >= 0; ) {
+                                    final MapLocation nearbyLoc = new MapLocation(loc.x + i - 2, loc.y + j - 2);
+                                    if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
+                                        rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
+                                        rc.setIndicatorDot(nearbyLoc, 255, 0, 0);
+                                        filled = true;
+                                        break;
+                                    }
+                                }
+                                if (filled)
+                                    break;
+                            }
+
+                            prevType = typeId;
+                            // Complete the ruin if we can.
+                            if (rc.canCompleteTowerPattern(type, loc)) {
+                                rc.completeTowerPattern(type, loc);
+                                rc.setTimelineMarker("Tower built", 0, 255, 0);
+                                System.out.println("Built a tower at " + loc + "!");
+                                prevType = -1;
+                            }
+                        }
+
                     } else {
                         // Finished ruin, make improvements while passing by
                         if (rc.canUpgradeTower(loc) && rc.getNumberTowers() >= 5 && rc.getChips() >= 1300) {
