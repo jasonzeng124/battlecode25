@@ -17,7 +17,7 @@ public class Tower {
 
 
     public static void spawn(RobotController rc) throws GameActionException {
-        final int offset = tactician_v3.FastMath.rand256() % 8;
+        final int offset = FastMath.rand256() % 8;
         for (int i = 0; i < 8; i++) {
             final MapLocation loc = rc.getLocation().add(directions[i ^ offset]);
             if (rc.canBuildRobot(next, loc)) {

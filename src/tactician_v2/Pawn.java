@@ -89,20 +89,20 @@ public class Pawn {
     }
 
     public static void makeAction(RobotController rc) throws GameActionException {
-        
-       // rc.setIndicatorString("prevType: " + prevType);
+
+        // rc.setIndicatorString("prevType: " + prevType);
         final int curRound = rc.getRoundNum();
 
         double[] moveScore = new double[9];
-        for (int i = 9; --i >= 0;) {
+        for (int i = 9; --i >= 0; ) {
             moveScore[i] = 0;
         }
         //refuel
         if (prevRuinLoc != null && rc.canSenseRobotAtLocation(prevRuinLoc) && rc.getPaint() < 100) {
             //don't move anywhere until you have refueled
-            if(rc.canTransferPaint(prevRuinLoc, rc.getPaint()-200)){
-                rc.transferPaint(prevRuinLoc, rc.getPaint()-200);
-            }else{
+            if (rc.canTransferPaint(prevRuinLoc, rc.getPaint() - 200)) {
+                rc.transferPaint(prevRuinLoc, rc.getPaint() - 200);
+            } else {
                 return;
             }
         }
@@ -111,7 +111,7 @@ public class Pawn {
             // Ruins are our top priority
             if (rc.getNumberTowers() < 25 && tile.hasRuin()) {
                 final MapLocation loc = tile.getMapLocation();
-                if(prevRuinLoc == null || loc.equals(prevRuinLoc)){
+                if (prevRuinLoc == null || loc.equals(prevRuinLoc)) {
                     // Skip if there are already many workers there
                     int cnt = 0;
                     for (RobotInfo r : rc.senseNearbyRobots(loc, 4, rc.getTeam())) {
@@ -119,7 +119,6 @@ public class Pawn {
                             cnt++;
                         }
                     }
-                  //  rc.setIndicatorString(cnt + " ");
                     if (cnt >= 1) {
                         continue;
                     }
@@ -128,12 +127,13 @@ public class Pawn {
                     if (!rc.canSenseRobotAtLocation(loc)) {
                         // Decide which type of tower to build
                         final double chanceOfMoney = (rc.getNumberTowers() <= 2) ? (1.0) : (0.5 - 0.001 * rc.getRoundNum());
-                        final int typeId = (prevType == -1 ? ((((FastMath.rand256()/256.0) <= (chanceOfMoney))) ? 1 : 0) : prevType);
+                        final int typeId = (prevType == -1 ? ((((FastMath.rand256() / 256.0) <= (chanceOfMoney))) ? 1 : 0) : prevType);
                         final UnitType type = (typeId == 1 ? UnitType.LEVEL_ONE_MONEY_TOWER : UnitType.LEVEL_ONE_PAINT_TOWER);
+
                         // Fill in any spots in the pattern with the appropriate paint.
                         boolean filled = false;
-                        for (int i = 5; --i >= 0;) {
-                            for (int j = 5; --j >= 0;) {
+                        for (int i = 5; --i >= 0; ) {
+                            for (int j = 5; --j >= 0; ) {
                                 final MapLocation nearbyLoc = new MapLocation(loc.x + i - 2, loc.y + j - 2);
                                 if (isPaintable(rc, nearbyLoc) && rc.senseMapInfo(nearbyLoc).getPaint() != (PTRNS[typeId][i][j] == 1 ? PaintType.ALLY_SECONDARY : PaintType.ALLY_PRIMARY)) {
                                     rc.attack(nearbyLoc, PTRNS[typeId][i][j] == 1);
@@ -158,10 +158,10 @@ public class Pawn {
 
                         // Move closer
                         Direction dirToRuin = GameUtils.greedyPath(rc, myLoc, loc);
-                        if(rc.canMove(dirToRuin)){
+                        if (rc.canMove(dirToRuin)) {
                             rc.move(dirToRuin);
                         }
-                        if(rc.canMove(GameUtils.greedyPath(rc, myLoc, loc).rotateLeft())){
+                        if (rc.canMove(GameUtils.greedyPath(rc, myLoc, loc).rotateLeft())) {
                             rc.move(dirToRuin);
                         }
                     } else {
@@ -202,9 +202,15 @@ public class Pawn {
             // Use a quick-clearing array to set banned tiles, from unfinished ruins
             qClearTime++;
             for (MapLocation loc : rc.senseNearbyRuins(-1)) {
+<<<<<<< HEAD
+                if (!rc.canSenseRobotAtLocation(loc)) {
+                    for (int i = 5; --i >= 0; ) {
+                        for (int j = 5; --j >= 0; ) {
+=======
                 if (!rc.canSenseRobotAtLocation(loc) && rc.getNumberTowers() < 25) {
                     for (int i = 5; --i >= 0;) {
                         for (int j = 5; --j >= 0;) {
+>>>>>>> origin/main
                             int x = loc.x + i - 2, y = loc.y + j - 2;
                             if (x >= 0 && x < 60 && y >= 0 && y < 60) {
                                 qClearArr[x][y] = qClearTime;
@@ -258,7 +264,9 @@ public class Pawn {
             moveScore[prevDir] += 5;
 
             // Try to move towards a paint tower if we're low
-            if (closestPT != null && rc.getPaint() < 75) {
+            // NOT IN EARLYGAME!
+            final int earlyThres = (rc.getMapHeight() * rc.getMapWidth()) / 15;
+            if ((closestPT != null && rc.getPaint() < 75) && rc.getRoundNum() >= earlyThres) {
                 moveScore[GameUtils.greedyPath(rc, myLoc, closestPT).ordinal()] += 50;
             }
 
@@ -290,7 +298,7 @@ public class Pawn {
 
             // TODO: Add probabilistic choice to avoid collisions?
             int bestDir = -1;
-            for (int i = 8; --i >= 0;) {
+            for (int i = 8; --i >= 0; ) {
                 if (rc.canMove(DIRS[i]) && (bestDir == -1 || moveScore[i] > moveScore[bestDir])) {
                     bestDir = i;
                 }
