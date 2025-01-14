@@ -13,13 +13,12 @@ public class RobotPlayer {
             BASE,
 
         // Soldiers:
-            PAWN, // General-use unit, slowly expands and builds outwards.
-            SETTLER, // Quickly explore and build towers near the target area without painting unnecessary roads.
             RAIDER, // Try to swiftly destroy a tower at the target location(s), and become a settler if we survive.
+            SETTLER, // Quickly explore and build towers near the target area without painting unnecessary roads.
+            PAWN, // General-use unit, slowly expands and builds outwards.
 
         // Moppers:
             MOPPER,
-            GUARD, // Focused on defending against enemy raider-like units
             SPLASHER
     };
 
@@ -30,13 +29,23 @@ public class RobotPlayer {
         
         FastMath.initRand(rc);
         if (!init) {
-            if (rc.getType().isTowerType())
+            if (rc.getType().isTowerType()) {
                 myJob = Job.BASE;
-            if (rc.getType() == UnitType.SOLDIER)
-             //   myJob = rc.getRoundNum() < 10 ? Job.RAIDER : Job.PAWN;
-                myJob = Job.PAWN;
-            if (rc.getType() == UnitType.MOPPER)
+            }
+            if (rc.getType() == UnitType.SOLDIER) {
+                myJob = rc.getRoundNum() < 5 ? Job.RAIDER : Job.PAWN;
+                if (rc.getRoundNum() < 5) {
+                    myJob = Job.RAIDER;
+//                    myJob = Job.SETTLER;
+                } else if (rc.getRoundNum() < rc.getMapWidth() * rc.getMapHeight() / 15) {
+                    myJob = Job.SETTLER;
+                } else {
+                    myJob = Job.PAWN;
+                }
+            }
+            if (rc.getType() == UnitType.MOPPER) {
                 myJob = Job.MOPPER;
+            }
             if (rc.getType() == UnitType.SPLASHER) {
                 myJob = Job.SPLASHER;
             }
@@ -47,8 +56,9 @@ public class RobotPlayer {
                 switch (myJob) {
                     case NONE -> rc.setIndicatorDot(rc.getLocation(), 255, 0, 0);
                     case BASE -> Tower.run(rc);
-                    case PAWN -> Pawn.run(rc);
                     case RAIDER -> Raider.run(rc);
+                    case SETTLER -> Settler.run(rc);
+                    case PAWN -> Pawn.run(rc);
                     case MOPPER -> Mopper.run(rc);
                     case SPLASHER -> Splasher.run(rc);
                     default -> System.err.println("Unknown unit type");

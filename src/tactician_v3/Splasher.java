@@ -7,7 +7,9 @@ public class Splasher {
 
     enum State {
         WORKING, GOING_HOME, GOING_BACK
-    };
+    }
+
+    ;
 
     public static MapInfo[] nearbyTiles;
     public static RobotInfo[] nearbyRobots;
@@ -65,7 +67,7 @@ public class Splasher {
         if (rc.isActionReady()) {
             MapLocation loc = null;
             int scr = 0;
-            for (MapInfo tile : rc.senseNearbyMapInfos(rc.getLocation(), 4)) {
+            for (MapInfo tile : nearbyTiles) {
                 final MapLocation tgt = tile.getMapLocation();
                 if (!rc.canAttack(tgt)) {
                     continue;
@@ -101,11 +103,15 @@ public class Splasher {
                         moveScore[i] = 0;
                     }
 
-                    // Move away from the origin
-                    if (origin != null) {
-                        final MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
-                        moveScore[origin.directionTo(center).ordinal()] += 3;
-                    }
+//                    // Move away from the origin
+//                    if (origin != null) {
+//                        final MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
+//                        moveScore[origin.directionTo(center).ordinal()] += 3;
+//                    }
+
+                    // Move towards the center, ig
+                    final MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
+                    moveScore[GameUtils.greedyPath(rc, myLoc, center).ordinal()] += 3;
 
                     for (MapInfo tile : nearbyTiles) {
                         final MapLocation loc = tile.getMapLocation();
@@ -114,7 +120,7 @@ public class Splasher {
 
                         // Get close to enemy paint, but not onto it
                         if (tile.getPaint().isEnemy()) {
-                            moveScore[dir] += dist <= 2 ? -20 : +1;
+                            moveScore[dir] += dist <= 2 ? -20 : +3;
                         }
 
                         // Get close to empty paint
@@ -125,9 +131,9 @@ public class Splasher {
 
                     // Inertia
                     if (prvDir != null) {
-                        moveScore[prvDir.ordinal()] += 5;
-                        moveScore[(prvDir.ordinal() + 1) % 8] += 2;
-                        moveScore[(prvDir.ordinal() + 7) % 8] += 2;
+                        moveScore[prvDir.ordinal()] += 8;
+                        moveScore[(prvDir.ordinal() + 1) % 8] += 1;
+                        moveScore[(prvDir.ordinal() + 7) % 8] += 1;
                     }
 
                     // TODO: Add probabilistic choice to avoid collisions?
