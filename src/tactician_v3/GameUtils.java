@@ -36,7 +36,7 @@ public class GameUtils {
     }
 
     // Greedy pathing
-    static Direction greedyPath(RobotController rc, MapLocation a, MapLocation b) {
+    public static Direction greedyPath(RobotController rc, MapLocation a, MapLocation b) {
         final int idx = a.directionTo(b).ordinal();
         int[] order = {
                 idx + 4,

@@ -1,4 +1,3 @@
-
 package tactician_v3;
 
 import battlecode.common.*;
