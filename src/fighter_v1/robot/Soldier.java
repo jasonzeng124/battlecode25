@@ -97,7 +97,7 @@ public class Soldier extends Unit {
                 if (rc.canUpgradeTower(tile.getMapLocation()) && rc.getChips() >= 2500) {
                     rc.upgradeTower(tile.getMapLocation());
                 }
-                if (rc.canAttack(tile.getMapLocation()) && tile.getPaint() == PaintType.EMPTY) {
+                if (rc.canAttack(tile.getMapLocation()) && tile.getPaint() == PaintType.EMPTY && rc.getPaint() >= 100) {
                     rc.attack(tile.getMapLocation());
                 }
             }
@@ -106,6 +106,11 @@ public class Soldier extends Unit {
         // Chance to clear this stuff
         if (FastRand.next256() < 16) {
             badRuins = new LocationSet();
+        }
+
+        // Chance to go diagonal if we're not already
+        if (curDir.ordinal() % 2 == 0 && FastRand.next256() < 16) {
+            curDir = allDirections[(curDir.ordinal() + FastRand.next256() % 3 + 7) % 8];
         }
     }
 }
