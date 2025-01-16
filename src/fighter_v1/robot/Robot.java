@@ -7,12 +7,12 @@ public abstract class Robot {
     protected final Direction[] allDirections = Direction.values();
     protected final Direction[] adjDirections = {
             Direction.NORTH,
-            Direction.EAST,
-            Direction.SOUTH,
-            Direction.WEST,
             Direction.NORTHEAST,
+            Direction.EAST,
             Direction.SOUTHEAST,
+            Direction.SOUTH,
             Direction.SOUTHWEST,
+            Direction.WEST,
             Direction.NORTHWEST
     };
     protected final Direction[] diagDirections = {
