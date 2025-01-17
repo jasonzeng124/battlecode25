@@ -9,7 +9,7 @@ import fighter_v2a.util.FastLocSet;
 import java.util.ArrayList;
 
 public abstract class Unit extends Robot {
-    protected ArrayList<MapLocation> paintTowerLocs = new ArrayList<>();
+    public FastIterableLocSet paintTowerLocs = new FastLocSet();
 
     public Unit(RobotController rc) {
         super(rc);
@@ -17,7 +17,20 @@ public abstract class Unit extends Robot {
 
     @Override
     public void function() throws GameActionException {
-        for (RobotInfo rob : rc.senseNearbyRobots(rc.getLocation(), 9, myTeam)) {
+        for (MapLocation ml : rc.senseNearbyRuins(-1)) {
+            if(rc.canSenseRobotAtLocation()){
+                RobotInfo ri = rc.senseRobotAtLocation(ml);
+                if(ri.getTeam() == myTeam){
+                    paintTowerLocs.add(ml);
+                }else{
+                    paintTowerLocs.remove(ml);
+                }
+            }else{
+                paintTowerLocs.remove(ml);
+            }
+        }
+
+        for (RobotInfo rob : rc.senseNearbyRobots(rc.getLocation(),  myTeam)) {
             if (rob.type.paintPerTurn > 0) {
                 if (!paintTowerLocs.contains(rob.getLocation())) {
                     paintTowerLocs.add(rob.getLocation());
@@ -32,11 +45,11 @@ public abstract class Unit extends Robot {
         }
     }
 
-    protected MapLocation getClosestPaintTower() {
-        int minDist = Integer.MAX_VALUE;
+    protected MapLocation getRandomPaintTower() {
+        double minDist = 1000.0;
         MapLocation res = null;
         for (MapLocation loc : paintTowerLocs) {
-            final int dist = rc.getLocation().distanceSquaredTo(loc);
+            final double dist = Math.sqrt(rc.getLocation().distanceSquaredTo(loc)) + FastRand.nextFloat() * 10.0;
             if (dist < minDist) {
                 minDist = dist;
                 res = loc;
