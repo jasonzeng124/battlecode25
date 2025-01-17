@@ -49,7 +49,7 @@ public abstract class Unit extends Robot {
         double minDist = 1000.0;
         MapLocation res = null;
         for (MapLocation loc : paintTowerLocs) {
-            final double dist = Math.sqrt(rc.getLocation().distanceSquaredTo(loc)) + FastRand.nextFloat() * 10.0;
+            final double dist = Math.sqrt(rc.getLocation().distanceSquaredTo(loc)) + FastRand.nextFloat() * ((rc.getMapWidth() + rc.getMapHeight())/2);
             if (dist < minDist) {
                 minDist = dist;
                 res = loc;
