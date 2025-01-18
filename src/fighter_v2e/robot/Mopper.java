@@ -1,10 +1,10 @@
-package fighter_v2d.robot;
+package fighter_v2e.robot;
 
 import battlecode.common.*;
-import fighter_v2d.util.FastRand;
-import fighter_v2d.util.FastIntSet;
-import fighter_v2d.util.FastIterableLocSet;
-import fighter_v2d.util.FastLocSet;
+import fighter_v2e.util.FastRand;
+import fighter_v2e.util.FastIntSet;
+import fighter_v2e.util.FastIterableLocSet;
+import fighter_v2e.util.FastLocSet;
 
 public class Mopper extends Unit {
     Direction curDir;

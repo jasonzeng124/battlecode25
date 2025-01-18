@@ -1,4 +1,4 @@
-package fighter_v2e.util;
+package fighter_v3a.util;
 
 public class FastIntSet {
     public StringBuilder keys;

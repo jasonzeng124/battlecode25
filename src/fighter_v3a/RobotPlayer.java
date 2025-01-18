@@ -1,8 +1,8 @@
-package fighter_v2e;
+package fighter_v3a;
 
 import battlecode.common.Clock;
 import battlecode.common.RobotController;
-import fighter_v2e.robot.*;
+import fighter_v3a.robot.*;
 
 @SuppressWarnings("unused")
 public class RobotPlayer {

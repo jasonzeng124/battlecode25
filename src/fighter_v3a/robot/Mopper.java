@@ -1,10 +1,10 @@
-package fighter_v2e.robot;
+package fighter_v3a.robot;
 
 import battlecode.common.*;
-import fighter_v2e.util.FastRand;
-import fighter_v2e.util.FastIntSet;
-import fighter_v2e.util.FastIterableLocSet;
-import fighter_v2e.util.FastLocSet;
+import fighter_v3a.util.FastRand;
+import fighter_v3a.util.FastIntSet;
+import fighter_v3a.util.FastIterableLocSet;
+import fighter_v3a.util.FastLocSet;
 
 public class Soldier extends Unit {
     static final int[] UPG_COST = {1000, 2500, 5000, (int) 1e9};
@@ -21,22 +21,17 @@ public class Soldier extends Unit {
         Direction.CENTER
     };
 
-    enum SoldierState{
+    enum MopperState{
         WANDER,
-        BUILD,
-        FIGHT,
         GOHOME
     }    
 
-    //5 things to focus on as a soldier
     enum FocusType{
         NONE,
         RANDOM,
-        WRONG,
-        EMPTY,
-        ENEMY,
-        RUIN,
-        HOME
+        SAFTEY,//go to safe location
+        ENEMY,//go to enemy paint
+        HOME//go home
     }
 
 

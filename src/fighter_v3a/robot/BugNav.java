@@ -1,10 +1,10 @@
-package fighter_v2e.robot;
+package fighter_v3a.robot;
 
 import battlecode.common.*;
-import fighter_v2e.util.FastRand;
-import fighter_v2e.util.FastIntSet;
-import fighter_v2e.util.FastIterableLocSet;
-import fighter_v2e.util.FastLocSet;
+import fighter_v3a.util.FastRand;
+import fighter_v3a.util.FastIntSet;
+import fighter_v3a.util.FastIterableLocSet;
+import fighter_v3a.util.FastLocSet;
 
 public class BugNav {
     static RobotController rc;
@@ -48,11 +48,11 @@ public class BugNav {
         nav();
     }
 
-    static public void move(MapLocation loc, boolean [] dontGo) {
-        if (!rc.isMovementReady()) return;
-        impassable = dontGo;
+    static public Direction getMoveDir(MapLocation loc) {
+        if (!rc.isMovementReady()) return Direction.CENTER;
+        initTurn();
         target = loc;
-        nav();
+        return navDir();
     }
 
     static boolean canMove(Direction dir) {
@@ -182,6 +182,119 @@ public class BugNav {
         }
         return true;
     }
+
+    static Direction navDir() {
+        try {
+            // different target? ==> previous data does not help!
+            if (prevTarget == null || target.distanceSquaredTo(prevTarget) > 0) {
+                resetPathfinding();
+            }
+
+            // If I'm at a minimum distance to the target, I'm free!
+            MapLocation myLoc = rc.getLocation();
+            int d = distance(myLoc, target);
+
+            if (d < minDistToEnemy) {
+                resetPathfinding();
+                minDistToEnemy = d;
+            }
+
+            int code = getCode();
+
+            if (visited.contains(code)) {
+                // Debug.println("Contains code", id);
+                resetPathfinding();
+            }
+            visited.add(code);
+
+            // Update data
+            prevTarget = target;
+
+            // If there's an obstacle I try to go around it [until I'm free] instead of
+            // going to the target directly
+            Direction dir = myLoc.directionTo(target);
+            if (lastObstacleFound != null) {
+                // Debug.println("Last obstacle found: " + lastObstacleFound, id);
+                dir = myLoc.directionTo(lastObstacleFound);
+            }
+
+            if (canMove(dir)) {
+                // Debug.println("can move: " + dir, id);
+                resetPathfinding();
+            }
+            
+            // I rotate clockwise or counterclockwise (depends on 'rotateRight'). If I try
+            // to go out of the map I change the orientation
+            // Note that we have to try at most 16 times since we can switch orientation in
+            // the middle of the loop. (It can be done more efficiently)
+            for (int i = 8; i-- > 0;) {
+                MapLocation newLoc = myLoc.add(dir);
+                if (rc.canSenseLocation(newLoc)) {
+                    if (canMove(dir)) {
+                        return dir;
+                    }
+                }
+                RobotInfo ri; 
+                if (!rc.onTheMap(newLoc)) {
+                    rotateRight = !rotateRight;
+                } else if ((ri = rc.senseRobotAtLocation(newLoc)) != null) {
+
+                } else if (!rc.sensePassability(newLoc)) {
+                    // This is the latest obstacle found if
+                    // - I can't move there
+                    // - It's on the map
+                    // - It's not passable
+                    lastObstacleFound = newLoc;
+                    if (shouldGuessRotation) {
+                        shouldGuessRotation = false;
+                        // Debug.println("Guessing rot dir", id);
+                        // Rotate left and right and find the first dir that you can move in
+                        Direction dirL = dir;
+                        for (int j = 8; j-- > 0;) {
+                            if (canMove(dirL))
+                                break;
+                            dirL = dirL.rotateLeft();
+                        }
+
+                        Direction dirR = dir;
+                        for (int j = 8; j-- > 0;) {
+                            if (canMove(dirR))
+                                break;
+                            dirR = dirR.rotateRight();
+                        }
+
+                        // Check which results in a location closer to the target
+                        MapLocation locL = myLoc.add(dirL);
+                        MapLocation locR = myLoc.add(dirR);
+
+                        int lDist = distance(target, locL);
+                        int rDist = distance(target, locR);
+                        int lDistSq = target.distanceSquaredTo(locL);
+                        int rDistSq = target.distanceSquaredTo(locR);
+
+                        if (lDist < rDist) {
+                            rotateRight = false;
+                        } else if (rDist < lDist) {
+                            rotateRight = true;
+                        } else {
+                            rotateRight = rDistSq < lDistSq;
+                        }
+                    }
+                    // Debug.println("Guessed: " + rotateRight, id);
+                }
+
+                if (rotateRight) dir = dir.rotateRight();
+                else dir = dir.rotateLeft();
+            }
+
+            if (canMove(dir)) return dir;
+            return Direction.CENTER;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Direction.CENTER;
+    }
+
 
     // clear some of the previous data
     static void resetPathfinding() {
