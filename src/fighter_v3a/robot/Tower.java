@@ -12,6 +12,7 @@ public class Tower extends Robot {
     }
 
     int numUsage = 0;
+    UnitType type = UnitType.SOLDIER;
 
     @Override
     public void function() throws GameActionException {
@@ -27,14 +28,22 @@ public class Tower extends Robot {
             numUsage++;
         }
         addIndicatorField("Numusage: " + numUsage);
-        if (rc.isActionReady() && (rc.getRoundNum() < 50 || (rc.getChips() >= 1300 && rc.getPaint() >= 500)) && FastRand.next256() <= (1024/rc.getNumberTowers())) {
+        if (rc.isActionReady() && (rc.getRoundNum() < 50 || (rc.getChips() >= 1300 && (rc.getPaint() >= 500 || rc.getType().paintPerTurn == 0))) && FastRand.next256() <= (1024/rc.getNumberTowers())) {
             for (MapInfo tile : rc.senseNearbyMapInfos(rc.getLocation(), 4)) {
                 MapLocation loc = tile.getMapLocation();
 //                UnitType type = rc.getRoundNum() >= 50 && FastRand.next256() < 32 ? UnitType.MOPPER : UnitType.SOLDIER;
-                UnitType type = UnitType.SOLDIER;
-
                 if (rc.canBuildRobot(type, loc)) {
                     rc.buildRobot(type, loc);
+                    if(rc.getRoundNum() < 50){
+                        type = UnitType.SOLDIER;
+                    }else{
+                        double x = FastRand.nextFloat();
+                        if(x < 0.5 || (rc.getType().paintPerTurn == 0 && rc.getPaint() < 200)){
+                            type = UnitType.MOPPER;
+                        }else{
+                            type = UnitType.SOLDIER;
+                        }
+                    }
                     return;
                 }
             }
