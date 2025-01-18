@@ -1,10 +1,10 @@
 package fighter_v2f.robot;
 
 import battlecode.common.*;
-import fighter_v2e.util.FastRand;
-import fighter_v2e.util.FastIntSet;
-import fighter_v2e.util.FastIterableLocSet;
-import fighter_v2e.util.FastLocSet;
+import fighter_v2f.util.FastRand;
+import fighter_v2f.util.FastIntSet;
+import fighter_v2f.util.FastIterableLocSet;
+import fighter_v2f.util.FastLocSet;
 
 public class Tower extends Robot {
     public Tower(RobotController rc) {

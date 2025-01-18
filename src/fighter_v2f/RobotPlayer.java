@@ -2,7 +2,7 @@ package fighter_v2f;
 
 import battlecode.common.Clock;
 import battlecode.common.RobotController;
-import fighter_v2e.robot.*;
+import fighter_v2f.robot.*;
 
 @SuppressWarnings("unused")
 public class RobotPlayer {
