@@ -1,4 +1,4 @@
-package tactician_v3;
+package tactician_v3_soldiers_only;
 
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
