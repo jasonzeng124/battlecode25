@@ -1,10 +1,10 @@
-package fighter_v3a.robot;
+package fighter_v3b.robot;
 
 import battlecode.common.*;
-import fighter_v3a.util.FastRand;
-import fighter_v3a.util.FastIntSet;
-import fighter_v3a.util.FastIterableLocSet;
-import fighter_v3a.util.FastLocSet;
+import fighter_v3b.util.FastRand;
+import fighter_v3b.util.FastIntSet;
+import fighter_v3b.util.FastIterableLocSet;
+import fighter_v3b.util.FastLocSet;
 
 public abstract class Robot {
     protected final Direction[] allDirections = Direction.values();

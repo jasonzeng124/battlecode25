@@ -76,9 +76,9 @@ public abstract class Robot {
         turnsActive++;
         maxBytecodes = Math.max(maxBytecodes, Clock.getBytecodeNum());
         sumBytecodes += Clock.getBytecodeNum();
-        addIndicatorField("Estimated Income: " + estimatedIncome);
-        addIndicatorField("Max bytecodes: " + maxBytecodes);
-        addIndicatorField("Average bytecodes: " + sumBytecodes / turnsActive);
+        // addIndicatorField("Estimated Income: " + estimatedIncome);
+        // addIndicatorField("Max bytecodes: " + maxBytecodes);
+        // addIndicatorField("Average bytecodes: " + sumBytecodes / turnsActive);
 
         rc.setIndicatorString(indicatorString.toString());
         indicatorString.setLength(0);

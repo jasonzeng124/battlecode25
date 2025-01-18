@@ -17,6 +17,7 @@ public abstract class Unit extends Robot {
 
     @Override
     public void function() throws GameActionException {
+        if(rc.getRoundNum() > 500 && rc.getNumberTowers() == 0 && rc.getChips() < 1000) rc.resign();
         for (MapLocation ml : rc.senseNearbyRuins(-1)) {
             if(rc.canSenseRobotAtLocation(ml)){
                 RobotInfo ri = rc.senseRobotAtLocation(ml);
