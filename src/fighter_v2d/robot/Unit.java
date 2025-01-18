@@ -1,10 +1,10 @@
-package fighter_v2a.robot;
+package fighter_v2c.robot;
 
 import battlecode.common.*;
-import fighter_v2a.util.FastRand;
-import fighter_v2a.util.FastIntSet;
-import fighter_v2a.util.FastIterableLocSet;
-import fighter_v2a.util.FastLocSet;
+import fighter_v2c.util.FastRand;
+import fighter_v2c.util.FastIntSet;
+import fighter_v2c.util.FastIterableLocSet;
+import fighter_v2c.util.FastLocSet;
 
 import java.util.ArrayList;
 
@@ -29,7 +29,7 @@ public abstract class Unit extends Robot {
                 paintTowerLocs.remove(ml);
             }
         }
-
+        /*
         for (RobotInfo rob : rc.senseNearbyRobots(rc.getLocation(), -1, myTeam)) {
             if (rob.type.paintPerTurn > 0) {
                 if (!paintTowerLocs.contains(rob.getLocation())) {
@@ -42,10 +42,10 @@ public abstract class Unit extends Robot {
                     rc.transferPaint(rob.getLocation(), -amount);
                 }
             }
-        }
+        }*/
     }
 
-    protected MapLocation getRandomPaintTower() {
+    public MapLocation getRandomPaintTower() {
         double minDist = 1000.0;
         MapLocation res = null;
         for (MapLocation loc : paintTowerLocs.getKeys()) {
@@ -58,7 +58,7 @@ public abstract class Unit extends Robot {
         return res;
     }
 
-    protected Direction fuzzyDir(Direction dir) {
+    public Direction fuzzyDir(Direction dir) {
         int idx = dir.ordinal();
         int[] order = {
                 idx + 4,
