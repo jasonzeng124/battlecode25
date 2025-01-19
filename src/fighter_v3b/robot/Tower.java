@@ -93,5 +93,70 @@ public class Tower extends Robot {
                 rc.upgradeTower(rc.getLocation());
             }
         }
+
+        if(rc.getType().getBaseType() == UnitType.LEVEL_ONE_MONEY_TOWER) {
+            int est = rc.getChips() + estimatedIncome * (2000-rc.getRoundNum());
+            est -= rc.getType().moneyPerTurn;
+            int need = (2000-rc.getRoundNum()) * 120;
+            if(rc.getRoundNum() > 400 && rc.getNumberTowers() > 4 && est > need && rc.getChips() > 5000) {
+                convert(UnitType.LEVEL_ONE_PAINT_TOWER);
+            }
+        }
+        if(rc.getHealth() < 100) {
+            convert(UnitType.LEVEL_ONE_DEFENSE_TOWER);
+        }
+        if(rc.getType().getBaseType() == UnitType.LEVEL_ONE_DEFENSE_TOWER && lastAttack > 100) {
+            convert(UnitType.LEVEL_ONE_PAINT_TOWER);
+        }
     }
+
+    public void convert(UnitType type) throws GameActionException {
+        boolean ok = false;
+        for(RobotInfo rob : rc.senseNearbyRobots(-1, myTeam)) {
+            int delta = Math.min(rc.getPaint(), rob.getType().paintCapacity - rob.getPaintAmount());
+            if(rc.canTransferPaint(rob.getLocation(), delta)) {
+                rc.transferPaint(rob.getLocation(), delta);
+            }
+            if(rob.getType() == UnitType.SOLDIER && rc.canSendMessage(rob.location)) {
+                rc.sendMessage(rob.location,
+                    (1<<31) | (Soldier.FocusType.RUIN.ordinal() << 24)
+                    | (rc.getLocation().x << 16)
+                    | (rc.getLocation().y << 8)
+                    | type.ordinal());
+                ok = true;
+            }
+        }
+        if(type == UnitType.LEVEL_ONE_DEFENSE_TOWER)
+            rc.setTimelineMarker("self-destruct", 255, 0, 0);
+        if(type == UnitType.LEVEL_ONE_PAINT_TOWER)
+            rc.setTimelineMarker("self-destruct", 0, 0, 255);
+        if(!ok) return;
+        rc.disintegrate();
+    }
+
+    // public void markPattern(UnitType unitType) throws GameActionException {
+    //     boolean[][] pattern = rc.getTowerPattern(unitType);
+    //     for(int i=0; i<5; i++) {
+    //         for(int j=0; j<5; j++) {
+    //             int x = rc.getLocation().x + i - 2;
+    //             int y = rc.getLocation().y + j - 2;
+    //             PaintType pt = rc.senseMapInfo(new MapLocation(x, y)).getPaint();
+    //             if(!pattern[i][j] && pt != PaintType.ALLY_PRIMARY)
+    //                 rc.mark(new MapLocation(x, y), pattern[i][j]);
+    //             if(pattern[i][j] && pt != PaintType.ALLY_SECONDARY)
+    //                 rc.mark(new MapLocation(x, y), pattern[i][j]);
+    //         }
+    //     }
+    // }
+
+    // public void unMark() throws GameActionException {
+    //     for(int i=0; i<5; i++) {
+    //         for(int j=0; j<5; j++) {
+    //             int x = rc.getLocation().x + i - 2;
+    //             int y = rc.getLocation().y + j - 2;
+    //             if(rc.canRemoveMark(new MapLocation(x, y)))
+    //                 rc.removeMark(new MapLocation(x, y));
+    //         }
+    //     }
+    // }
 }

@@ -45,7 +45,6 @@ public class Soldier extends Unit {
     MapLocation focus = null;
     FocusType focusType = FocusType.NONE;
     UnitType buildType = null;
-    int focusTimer = 0;
 
     public void setNewFocus(MapLocation loc, FocusType foc) throws GameActionException{
        // System.out.println(loc.toString() + " " + foc.toString());
@@ -75,6 +74,7 @@ public class Soldier extends Unit {
         MapLocation [] ruins = rc.senseNearbyRuins(-1);
         FastLocSet emptyRuinsSet = new FastLocSet();
         for(MapLocation ml : ruins){
+            if(FastRand.next256() < 6) badRuins.clear();
             if(rc.canSenseRobotAtLocation(ml)){
                 RobotInfo r = rc.senseRobotAtLocation(ml);
                 if(r.team != myTeam){
@@ -389,6 +389,7 @@ public class Soldier extends Unit {
         }
         // Complete the tower
         if (rc.canCompleteTowerPattern(type, focus)) {
+            rc.setTimelineMarker("Built Tower", 0, 255, 0);
             rc.completeTowerPattern(type, focus);
         }
     }
@@ -432,6 +433,29 @@ public class Soldier extends Unit {
 
     @Override
     public void function() throws GameActionException {
+        int best = -1;
+        int bestinfo = -1;
+        for(Message msg : rc.readMessages(-1)) {
+            int dat = msg.getBytes();
+            int rnd = msg.getRound();
+            if(rnd > best) {
+                best = rnd;
+                bestinfo = dat;
+            }
+        }
+        if(bestinfo != -1) {
+            int foctype = (bestinfo & 0xff000000) >> 24;
+            int focx = (bestinfo & 0x00ff0000) >> 16;
+            int focy = (bestinfo & 0x0000ff00) >> 8;
+            buildType = UnitType.values()[(bestinfo & 0x000000ff)];
+            if((foctype & 0x80) == 0x80) {
+                focusType = FocusType.values()[foctype & 0x7f];
+                focus = new MapLocation(focx, focy);
+            }
+            else {
+                setNewFocus(new MapLocation(focx, focy), FocusType.values()[foctype]);
+            }
+        }
         super.function();
         switch(curState){
             case WANDER:
