@@ -46,6 +46,8 @@ public abstract class Robot {
 
     private StringBuilder indicatorString = new StringBuilder();
 
+    boolean[][] pat;
+
     public Robot(RobotController rc) {
         this.rc = rc;
 
@@ -60,6 +62,7 @@ public abstract class Robot {
 
         FastRand.seed(rc);
         BugNav.init(rc);
+        pat = rc.getResourcePattern();
     }
 
     public void run() throws GameActionException {

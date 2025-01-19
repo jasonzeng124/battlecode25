@@ -15,12 +15,23 @@ public class Tower extends Robot {
 
     @Override
     public void function() throws GameActionException {
-        for (RobotInfo rob : rc.senseNearbyRobots(rc.getLocation(), -1, oppTeam)) {
-            if (rc.canAttack(rob.getLocation())) {
-                rc.attack(rob.getLocation());
+        {
+            RobotInfo best = null;
+            int bestscore = -1000;
+            for (RobotInfo rob : rc.senseNearbyRobots(rc.getLocation(), -1, oppTeam)) {
+                if (rc.canAttack(rob.getLocation())) {
+                    int score = 0;
+                    score -= rob.getHealth();
+
+                    if (score > bestscore) {
+                        bestscore = score;
+                        best = rob;
+                    }
+                }
             }
+            if(best != null) rc.attack(best.getLocation());
+            rc.attack(null);
         }
-        rc.attack(null);
         if(rc.getPaint() > 500){
             numUsage = Math.max(numUsage - 1, 0);
         }else{
@@ -31,7 +42,7 @@ public class Tower extends Robot {
             // UnitType type = rc.getRoundNum() >= 50 && FastRand.next256() < 32 ? UnitType.MOPPER : UnitType.SOLDIER;
             UnitType type = UnitType.SOLDIER;
             MapLocation bestloc = null;
-            int bestscore = -100;
+            int bestscore = -1000;
 
             for (MapInfo tile : rc.senseNearbyMapInfos(rc.getLocation(), 2)) {
                 MapLocation loc = tile.getMapLocation();
@@ -39,16 +50,15 @@ public class Tower extends Robot {
                 if (rc.canBuildRobot(type, loc)) {
                     int score = 0;
                     for (RobotInfo rob : rc.senseNearbyRobots(loc, 1, rc.getTeam())) {
-                        if (rob.getType() == type)
-                            score -= 1;
+                        score -= 10;
                     }
                     MapInfo info = rc.senseMapInfo(loc);
                     if (info.getPaint().isEnemy())
-                        score -= 2;
+                        score -= 20;
                     if (info.getPaint().isAlly())
-                        score -= 1;
+                        score -= 10;
 
-                    score += FastRand.next256() % 3;
+                    score += FastRand.next256() % 7;
 
                     if (score > bestscore) {
                         bestscore = score;
@@ -59,6 +69,7 @@ public class Tower extends Robot {
             if (bestloc != null)
                 rc.buildRobot(type, bestloc);
         }
+        addIndicatorField("Estimated Income: " + estimatedIncome);
         int threshold;
         switch(rc.getType()){
             case LEVEL_ONE_PAINT_TOWER:

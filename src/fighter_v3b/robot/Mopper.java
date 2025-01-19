@@ -104,6 +104,11 @@ public class Mopper extends Unit {
             }
         }
         if(rc.isActionReady()){
+            for (RobotInfo robot : rc.senseNearbyRobots(-1, rc.getTeam().opponent())) {
+                if(rc.canAttack(robot.getLocation())){
+                    rc.attack(robot.getLocation());
+                }
+            }
             //try to attack the focus
             if(focusType == FocusType.ENEMY && rc.canAttack(focus)){
                 rc.attack(focus);

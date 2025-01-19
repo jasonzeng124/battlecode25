@@ -39,7 +39,6 @@ public class Soldier extends Unit {
         HOME
     }
 
-
     SoldierState curState = SoldierState.WANDER;
 
     FastLocSet badRuins = new FastLocSet();
@@ -61,9 +60,18 @@ public class Soldier extends Unit {
         focus = null;
         focusType = FocusType.NONE;
     }
+    // public boolean paint(MapLocation loc)  throws GameActionException {
+    //     PaintType mark = rc.senseMapInfo(rc.getLocation()).getMark();
+    //     if(rc.senseMapInfo(loc).getPaint() == PaintType.EMPTY || rc.senseMapInfo(loc).getPaint() == mark){
+    //         return false;
+    //     }
+    //     if(mark.isAlly())
+    //         rc.attack(rc.getLocation(), mark == PaintType.ALLY_SECONDARY);
+    //     rc.attack(rc.getLocation(), pat[rc.getLocation().x%4][rc.getLocation().y%4]);
+    //     return true;
+    // }
 
     public void wander() throws GameActionException{
-        boolean [][] pat = rc.getResourcePattern();
         MapLocation [] ruins = rc.senseNearbyRuins(-1);
         FastLocSet emptyRuinsSet = new FastLocSet();
         for(MapLocation ml : ruins){
@@ -228,7 +236,7 @@ public class Soldier extends Unit {
         if(rc.canAttack(focus)){
             rc.attack(focus);
         }        
-        RobotInfo[] ri = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        RobotInfo[] ri = rc.senseNearbyRobots(-1, oppTeam);
         MapLocation[] towerBuf = new MapLocation[4];//towers that want to attack us
         MapLocation[] mopperBuf = new MapLocation[4];//moppers that want to attack us
         int towerPtr = 0;
@@ -446,22 +454,22 @@ public class Soldier extends Unit {
         }
         switch(focusType){
             case RANDOM:
-                rc.setIndicatorDot(focus, 255, 0, 0);
+                rc.setIndicatorLine(rc.getLocation(), focus, 255, 0, 0);
                 break;
             case WRONG:
-                rc.setIndicatorDot(focus, 255, 128, 0);
+                rc.setIndicatorLine(rc.getLocation(), focus, 255, 128, 0);
                 break;
             case EMPTY:
-                rc.setIndicatorDot(focus, 255, 255, 0);
+                rc.setIndicatorLine(rc.getLocation(), focus, 255, 255, 0);
                 break;
             case ENEMY:
-                rc.setIndicatorDot(focus, 0, 255, 0);
+                rc.setIndicatorLine(rc.getLocation(), focus, 0, 255, 0);
                 break;
             case RUIN:
-                rc.setIndicatorDot(focus, 0, 0, 255);
+                rc.setIndicatorLine(rc.getLocation(), focus, 0, 0, 255);
                 break;
             case HOME:
-                rc.setIndicatorDot(focus, 255, 0, 255);
+                rc.setIndicatorLine(rc.getLocation(), focus, 255, 0, 255);
                 break;
         }
     }

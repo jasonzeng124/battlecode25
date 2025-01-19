@@ -7,11 +7,12 @@ import fighter_v3b.util.FastIterableLocSet;
 import fighter_v3b.util.FastLocSet;
 
 public class Tower extends Robot {
-    public Tower(RobotController rc) {
+    public Tower(RobotController rc) throws GameActionException {
         super(rc);
     }
 
     int numUsage = 0;
+    int lastAttack = 0;
     UnitType type = UnitType.SOLDIER;
 
     @Override
@@ -19,12 +20,15 @@ public class Tower extends Robot {
         {
             RobotInfo best = null;
             int bestscore = -1000;
-            for (RobotInfo rob : rc.senseNearbyRobots(rc.getLocation(), -1, oppTeam)) {
+            for (RobotInfo rob : rc.senseNearbyRobots(-1, oppTeam)) {
                 if (rc.canAttack(rob.getLocation())) {
                     int score = 0;
                     if(rob.getHealth() <= rc.getType().aoeAttackStrength)
-                        score = -100;
-                    score -= rob.getHealth();
+                        score -= 200;
+                    if(rob.getType() == UnitType.SOLDIER) score += 300;
+                    if(rob.getType() == UnitType.SPLASHER) score += 100;
+                    score += rob.getPaintAmount();
+                    score += rob.getID() % 10;
 
                     if (score > bestscore) {
                         bestscore = score;
@@ -32,9 +36,13 @@ public class Tower extends Robot {
                     }
                 }
             }
-            if(best != null) rc.attack(best.getLocation());
+            if(best != null) {
+                lastAttack = 0;
+                rc.attack(best.getLocation());
+            }
             rc.attack(null);
         }
+        lastAttack ++;
         if(rc.getPaint() > 500){
             numUsage = Math.max(numUsage - 1, 0);
         }else{

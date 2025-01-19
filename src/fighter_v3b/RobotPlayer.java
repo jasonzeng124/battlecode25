@@ -1,12 +1,13 @@
 package fighter_v3b;
 
 import battlecode.common.Clock;
+import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
 import fighter_v3b.robot.*;
 
 @SuppressWarnings("unused")
 public class RobotPlayer {
-    public static void run(RobotController rc) {
+    public static void run(RobotController rc)  throws GameActionException {
         Robot robot = createRobot(rc);
 
         if (robot == null) {
@@ -24,7 +25,7 @@ public class RobotPlayer {
         }
     }
 
-    private static Robot createRobot(RobotController rc) {
+    private static Robot createRobot(RobotController rc) throws GameActionException {
         switch (rc.getType()) {
             case SOLDIER:
                 return new Soldier(rc);
