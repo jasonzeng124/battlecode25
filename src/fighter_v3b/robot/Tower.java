@@ -9,10 +9,13 @@ import fighter_v3b.util.FastLocSet;
 public class Tower extends Robot {
     public Tower(RobotController rc) throws GameActionException {
         super(rc);
+        atkbuf = new int[20];
     }
 
     int numUsage = 0;
     int lastAttack = 0;
+    int atkfreq = 0;
+    int[] atkbuf;
     UnitType type = UnitType.SOLDIER;
 
     @Override
@@ -42,6 +45,14 @@ public class Tower extends Robot {
             }
             rc.attack(null);
         }
+        atkfreq -= atkbuf[rc.getRoundNum() % 20];
+        if(lastAttack == 0) {
+            atkbuf[rc.getRoundNum() % 20] = 1;
+        }
+        else {
+            atkbuf[rc.getRoundNum() % 20] = 0;
+        }
+        atkfreq += atkbuf[rc.getRoundNum() % 20];
         lastAttack ++;
         if(rc.getPaint() > 500){
             numUsage = Math.max(numUsage - 1, 0);
@@ -49,6 +60,7 @@ public class Tower extends Robot {
             numUsage++;
         }
         addIndicatorField("Numusage: " + numUsage);
+        addIndicatorField("Atkfreq: " + atkfreq);
         if (rc.isActionReady() && (rc.getRoundNum() < 50 || (rc.getChips() >= 1300 && (rc.getPaint() >= 500 || rc.getType().paintPerTurn == 0))) && FastRand.next256() <= (1024/rc.getNumberTowers())) {
             for (MapInfo tile : rc.senseNearbyMapInfos(rc.getLocation(), 4)) {
                 MapLocation loc = tile.getMapLocation();
@@ -73,19 +85,25 @@ public class Tower extends Robot {
         int threshold;
         switch(rc.getType()){
             case LEVEL_ONE_PAINT_TOWER:
-                threshold = Math.max(6000 - (numUsage * 20), 2500);
+                threshold = Math.max(4000 - (numUsage * 20), 2500);
                 break;
             case LEVEL_TWO_PAINT_TOWER:
-                threshold = Math.max(12000 - (numUsage * 20), 5000);
+                threshold = Math.max(8000 - (numUsage * 20), 5000);
                 break;
             case LEVEL_ONE_MONEY_TOWER:
-                threshold = 5000;
+                threshold = 4000;
                 break;
             case LEVEL_TWO_MONEY_TOWER:
-                threshold = 10000;
+                threshold = 8000;
+                break;
+            case LEVEL_ONE_DEFENSE_TOWER:
+                threshold = Math.max(5000 - atkfreq * 100, 2500);
+                break;
+            case LEVEL_TWO_DEFENSE_TOWER:
+                threshold = Math.max(9000 - atkfreq * 100, 5000);
                 break;
             default:
-                threshold = 100000;
+                threshold = 10000;
                 break;
         }
         if(rc.getChips() > threshold){
