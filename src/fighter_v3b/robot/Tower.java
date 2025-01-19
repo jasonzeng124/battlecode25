@@ -16,11 +16,24 @@ public class Tower extends Robot {
 
     @Override
     public void function() throws GameActionException {
-        rc.attack(null);
-        for (RobotInfo rob : rc.senseNearbyRobots(rc.getLocation(), -1, oppTeam)) {
-            if (rc.canAttack(rob.getLocation())) {
-                rc.attack(rob.getLocation());
+        {
+            RobotInfo best = null;
+            int bestscore = -1000;
+            for (RobotInfo rob : rc.senseNearbyRobots(rc.getLocation(), -1, oppTeam)) {
+                if (rc.canAttack(rob.getLocation())) {
+                    int score = 0;
+                    if(rob.getHealth() <= rc.getType().aoeAttackStrength)
+                        score = -100;
+                    score -= rob.getHealth();
+
+                    if (score > bestscore) {
+                        bestscore = score;
+                        best = rob;
+                    }
+                }
             }
+            if(best != null) rc.attack(best.getLocation());
+            rc.attack(null);
         }
         if(rc.getPaint() > 500){
             numUsage = Math.max(numUsage - 1, 0);
