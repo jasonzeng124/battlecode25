@@ -209,8 +209,8 @@ public class Soldier extends Unit {
                 }
             }
         }
-        for(int i = 8; --i >= 0;){
-            MapLocation ml = rc.getLocation().add(directions[i]);
+        for(MapInfo info : rc.senseNearbyMapInfos()){
+            MapLocation ml = info.getMapLocation();
             if(ml.x%4 == 2 && ml.y%4 == 2 && rc.canCompleteResourcePattern(ml)){
                 rc.completeResourcePattern(ml);
             }

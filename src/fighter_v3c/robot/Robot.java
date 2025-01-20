@@ -71,7 +71,7 @@ public abstract class Robot {
         if (lastTurnCoins != -1) {
             estimatedIncome = Math.max(estimatedIncome, thisTurnCoins - lastTurnCoins);
         }
-        estimatedIncome--;
+        estimatedIncome*=0.95;
         
 
         function();
@@ -79,9 +79,9 @@ public abstract class Robot {
         turnsActive++;
         maxBytecodes = Math.max(maxBytecodes, Clock.getBytecodeNum());
         sumBytecodes += Clock.getBytecodeNum();
-        // addIndicatorField("Estimated Income: " + estimatedIncome);
-        // addIndicatorField("Max bytecodes: " + maxBytecodes);
-        // addIndicatorField("Average bytecodes: " + sumBytecodes / turnsActive);
+        addIndicatorField("Estimated Income: " + estimatedIncome);
+        addIndicatorField("Max bytecodes: " + maxBytecodes);
+        addIndicatorField("Average bytecodes: " + sumBytecodes / turnsActive);
 
         rc.setIndicatorString(indicatorString.toString());
         indicatorString.setLength(0);

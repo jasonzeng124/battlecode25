@@ -10,16 +10,19 @@ public class Tower extends Robot {
     public Tower(RobotController rc) throws GameActionException {
         super(rc);
         atkbuf = new int[20];
+        usagebuf = new int[20];
     }
 
     int numUsage = 0;
     int lastAttack = 0;
     int atkfreq = 0;
     int[] atkbuf;
+    int[] usagebuf;
     UnitType type = UnitType.SOLDIER;
 
     @Override
     public void function() throws GameActionException {
+        atkfreq -= atkbuf[rc.getRoundNum() % 20];
         {
             RobotInfo best = null;
             int bestscore = -1000;
@@ -37,6 +40,7 @@ public class Tower extends Robot {
                         bestscore = score;
                         best = rob;
                     }
+                    atkbuf[rc.getRoundNum() % 20]++;
                 }
             }
             if(best != null) {
@@ -45,20 +49,15 @@ public class Tower extends Robot {
             }
             rc.attack(null);
         }
-        atkfreq -= atkbuf[rc.getRoundNum() % 20];
-        if(lastAttack == 0) {
-            atkbuf[rc.getRoundNum() % 20] = 1;
-        }
-        else {
-            atkbuf[rc.getRoundNum() % 20] = 0;
-        }
         atkfreq += atkbuf[rc.getRoundNum() % 20];
         lastAttack ++;
+        numUsage -= usagebuf[rc.getRoundNum() % 20];
         if(rc.getPaint() > 500){
-            numUsage = Math.max(numUsage - 1, 0);
+            usagebuf[rc.getRoundNum() % 20] = 0;
         }else{
-            numUsage++;
+            usagebuf[rc.getRoundNum() % 20] = (600-rc.getPaint())/100;
         }
+        numUsage += usagebuf[rc.getRoundNum() % 20];
         addIndicatorField("Numusage: " + numUsage);
         addIndicatorField("Atkfreq: " + atkfreq);
         if (rc.isActionReady() && (rc.getRoundNum() < 50 || (rc.getChips() >= 1300 && (rc.getPaint() >= 500 || rc.getType().paintPerTurn == 0))) && FastRand.next256() <= (1024/rc.getNumberTowers())) {
@@ -80,51 +79,53 @@ public class Tower extends Robot {
                     return;
                 }
             }
-        
         }
+        int est = rc.getChips() + estimatedIncome * (2000-rc.getRoundNum());
+        addIndicatorField("Est: " + est);
+        est -= rc.getType().moneyPerTurn;
+        int need = (2000-rc.getRoundNum()) * 800;
+        addIndicatorField("Need: " + need);
         int threshold;
         switch(rc.getType()){
             case LEVEL_ONE_PAINT_TOWER:
-                threshold = Math.max(4000 - (numUsage * 20), 2500);
+                threshold = Math.max(4000 - numUsage * 80, 2500);
                 break;
             case LEVEL_TWO_PAINT_TOWER:
-                threshold = Math.max(8000 - (numUsage * 20), 5000);
+                threshold = Math.max(8000 - numUsage * 80, 5000);
                 break;
             case LEVEL_ONE_MONEY_TOWER:
-                threshold = 4000;
+                threshold = 3000;
                 break;
             case LEVEL_TWO_MONEY_TOWER:
-                threshold = 8000;
+                threshold = 5000;
                 break;
             case LEVEL_ONE_DEFENSE_TOWER:
-                threshold = Math.max(5000 - atkfreq * 100, 2500);
+                threshold = Math.max(5000 - atkfreq * 80, 2500);
                 break;
             case LEVEL_TWO_DEFENSE_TOWER:
-                threshold = Math.max(9000 - atkfreq * 100, 5000);
+                threshold = Math.max(9000 - atkfreq * 80, 5000);
                 break;
             default:
                 threshold = 10000;
                 break;
         }
-        if(rc.getChips() > threshold){
-            if(rc.canUpgradeTower(rc.getLocation())){
-                rc.upgradeTower(rc.getLocation());
-            }
-        }
 
         if(rc.getType().getBaseType() == UnitType.LEVEL_ONE_MONEY_TOWER) {
-            int est = rc.getChips() + estimatedIncome * (2000-rc.getRoundNum());
-            est -= rc.getType().moneyPerTurn;
-            int need = (2000-rc.getRoundNum()) * 120;
             if(rc.getRoundNum() > 400 && rc.getNumberTowers() > 4 && est > need && rc.getChips() > 5000) {
                 convert(UnitType.LEVEL_ONE_PAINT_TOWER);
             }
         }
-        if(rc.getHealth() < 100) {
+        if(rc.getHealth() < 150) {
             convert(UnitType.LEVEL_ONE_DEFENSE_TOWER);
         }
         if(rc.getType().getBaseType() == UnitType.LEVEL_ONE_DEFENSE_TOWER && lastAttack > 100) {
             convert(UnitType.LEVEL_ONE_PAINT_TOWER);
+        }
+
+        if(rc.getChips() > threshold){
+            if(rc.canUpgradeTower(rc.getLocation())){
+                rc.upgradeTower(rc.getLocation());
+            }
         }
     }
 
